@@ -1,8 +1,8 @@
+#include <istream>
 #include <string>
 #include <vector>
 #include <utility>
 #include <iostream>
-#include <istream>
 #include <ostream>
 #include <iterator>
 #include <map>
@@ -136,7 +136,7 @@ namespace parser
     {
         if (is_func(str))
         {
-            return 5;
+            return 51;
         }
         else if (is_op(str))
         {
@@ -171,7 +171,7 @@ namespace parser
         return results;
     }
 
-    //convert string in infix notation to string in RPN
+    //convert string in infix notation to a string in Reverse Polish Notation
     //using dijkstra's shunting yard algorithm 
     std::vector<std::string> s_yard(std::string str, std::string var_name, double var_val)
     {
@@ -251,7 +251,6 @@ namespace parser
             {
                 std::cout << "mismatched parentheses\n";
                 exit(-1);
-                //TODO: clear display
             }
             output_queue.push_back(op_stack.top());
             op_stack.pop();
@@ -284,7 +283,6 @@ namespace parser
         else
         {
             std::cout << "invalid operation passed to func: eval\n";
-            //TODO: clear display
             exit(-1);
         }
     }
@@ -299,12 +297,12 @@ namespace parser
         else if (op == "asin") return asin(d);
         else if (op == "abs") return abs(d);
         else if (op == "atan") return atan(d);
+        else if (op == "log") return log(d);
+        else if (op == "log10") return log10(d);
         else if (op == "cosh") return cosh(d);
         else if (op == "sinh") return sinh(d);
         else if (op == "tanh") return tanh(d);
-        else if (op == "exp") return exp(d);
-        else if (op == "log") return log(d);
-        else if (op == "log10") return log10(d);    
+        else if (op == "exp") return exp(d); 
         else if (op == "cbrt") return cbrt(d);
         else if (op == "tgamma") return tgamma(d);
         else if (op == "lgamma") return lgamma(d);
@@ -315,23 +313,23 @@ namespace parser
         else if (op == "atanh") return atanh(d);
         else
         {
-            std::cout << "invalid unary op/function\n";
+            std::cout << "invalid unary op / function\n";
             //TODO: clear display
             exit(-1);
         }
     }
 
-    double eval_rpn(const std::vector<std::string>& tokens)
-    {
+    //double eval_rpn(const std::vector<std::string>& tokens)
+    //{
         
-    }
+    //}
 
 }
 
 
 int main()
 {
-    std::string a = "10 + 7";
+    std::string a = "sin ( 10 ) + 7";
     std::vector<std::string>rpn = parser::s_yard(a, "x", 10);
     std::cout << parser::collapse_str_vec(rpn) << '\n';
     return 0;
