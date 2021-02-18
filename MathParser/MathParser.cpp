@@ -191,7 +191,7 @@ namespace parser
         std::vector<std::string> tokens = tokenize(str);
         std::vector<std::string> output_queue;
 
-        std::stack<std::string> operator_stack;
+        std::stack<std::string> op_stack;
 
         for (std::string& tok : tokens)
         {
@@ -201,11 +201,11 @@ namespace parser
             }
             else if (is_func(tok))
             {
-                operator_stack.push(tok);
+                op_stack.push(tok);
             }
             else if (is_op(tok))
             {
-                while ((is_op(operator_stack.top()) && ))
+                while ((is_op(op_stack.top()) && get_prec(op_stack.top()) > get_prec(tok)) || (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok)))
                 {
 
                 }
