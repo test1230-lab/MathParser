@@ -142,7 +142,7 @@ namespace parser
         }
         else
         {
-            throw std::runtime_error("invalid operation passed to func: eval");
+            std::cout << "invalid operation passed to func: eval\n";
         }
     }
 
@@ -158,7 +158,7 @@ namespace parser
         }
         else
         {
-            throw std::runtime_error("error thrown by func: get_prec, invalid operator/func");
+           std::cout << "invalid operator/func\n";
         }
     }
 
@@ -190,7 +190,6 @@ namespace parser
     {
         std::vector<std::string> tokens = tokenize(str);
         std::vector<std::string> output_queue;
-
         std::stack<std::string> op_stack;
 
         for (std::string& tok : tokens)
@@ -204,12 +203,60 @@ namespace parser
                 op_stack.push(tok);
             }
             else if (is_op(tok))
-            {
-                while ((is_op(op_stack.top()) && get_prec(op_stack.top()) > get_prec(tok)) || (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok)))
+            {   
+                /*
+                    While loop:
+                    while ((there is an operator at the top of the operator stack)
+                    and ((the operator at the top of the operator stack has greater precedence)
+                    or (the operator at the top of the operator stack has equal precedence and the token is left associative))
+                    and (the operator at the top of the operator stack is not a left parenthesis))
+                */
+                while ((is_op(op_stack.top()) && get_prec(op_stack.top()) > (get_prec(tok)) || \
+                       (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok))) && \
+                       (op_stack.top() != "("))
                 {
-
+                    //pop operators from stack to queue
+                    while (!op_stack.empty())
+                    {
+                        output_queue.push_back(op_stack.top());
+                        op_stack.pop();
+                    }
                 }
+                op_stack.push(tok);
             }
+            else if (tok == "(")
+            {
+                op_stack.push(tok);
+            }
+            else if (tok == ")")
+            {
+                while (op_stack.top() != "(")
+                {
+                    output_queue.push_back(op_stack.top());
+                    op_stack.pop();
+                }
+                if (op_stack.top() == "(")
+                {
+                    op_stack.pop();
+                }
+                if (is_func(op_stack.top()))
+                {
+                    output_queue.push_back(op_stack.top());
+                    op_stack.pop();
+                }
+
+            }
+        }
+        //all tokens read
+        while (!op_stack.empty())
+        {
+            //there are mismatched parentheses
+            if (op_stack.top() == "(" || op_stack.top() == ")")
+            {
+                std::cout << "mismatched parentheses\n";
+            }
+            output_queue.push_back(op_stack.top());
+            op_stack.pop();
         }
     }
     
