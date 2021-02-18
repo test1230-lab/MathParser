@@ -49,33 +49,9 @@ namespace parser
         }
     }
 
-    bool is_any_op(const std::string& str)
+    bool is_op(const std::string& str)
     {
         if (str == "%" || str == "/" || str == "*" || str == "+" || str == "-")
-        {
-            return true;
-        }
-        else if (str == "sin" || str == "tan" || str == "acos" || str == "asin" || str == "abs")
-        {
-            return true;
-        }
-        else if (str == "atan" || str == "atan2" || str == "cosh" || str == "sinh")
-        {
-            return true;
-        }
-        else if (str == "tanh" || str == "acosh" || str == "asinh" || str == "atanh")
-        {
-            return true;
-        }
-        else if (str == "exp" || str == "frexp" || str == "ldexp" || str == "log")
-        {
-            return true;
-        }
-        else if (str == "log10" || str == "pow" || str == "sqrt" || str == "cbrt")
-        {
-            return true;
-        }
-        else if (str == "hypot" || str == "tgamma" || str == "lgamma" || str == "ceil" || str == "floor")
         {
             return true;
         }
@@ -83,6 +59,14 @@ namespace parser
         {
             return false;
         }
+    }
+
+    bool if_in(std::vector<std::string> vec, std::string key)
+    {
+        if (std::find(vec.begin(), vec.end(), key) != vec.end())
+            return true;
+        else
+            return false;
     }
 
     bool is_func(const std::string& str)
@@ -123,6 +107,16 @@ namespace parser
         return(strspn(s.c_str(), "-.0123456789") == s.size());
     }
 
+    std::string collapse_str_vec(std::vector<std::string> v)
+    {
+        std::string res;
+        for (std::string& s : v)
+        {
+            res.append(s);
+        }
+        return res;
+    }
+
     //TODO: implement other funcs (see is_func for list)
     double eval(double d1, double d2, std::string type)
     {
@@ -158,7 +152,7 @@ namespace parser
         {
             return 5;
         }
-        else if (is_any_op(str))
+        else if (is_op(str))
         {
             return assoc_prec.at(str).first;
         }
@@ -191,12 +185,13 @@ namespace parser
     }
 
     //convert string in infix notation to string in RPN
-    //using dijkstra's shunting yard algorithm
-    std::vector<std::string> s_yard(std::string str)
+    //using dijkstra's shunting yard algorithm 
+    std::vector<std::string> s_yard(std::string str, double x_val)
     {
         std::vector<std::string> tokens = tokenize(str);
         std::vector<std::string> output_queue;
-        std::stack<std::string> stack;
+
+        std::stack<std::string> operator_stack;
 
         for (std::string& tok : tokens)
         {
@@ -204,67 +199,43 @@ namespace parser
             {
                 output_queue.push_back(tok);
             }
+            else if (is_func(tok))
+            {
+                operator_stack.push(tok);
+            }
+            else if (is_op(tok))
+            {
+                while ((is_op(operator_stack.top()) && ))
+                {
 
-            if (is_any_op(tok))
-            {
-                while (!stack.empty() && is_any_op(stack.top()))
-                {
-                    if ((is_left_assoc(tok) && get_prec(tok) <= get_prec(stack.top()) || (is_right_assoc(tok) && get_prec(tok) < get_prec(stack.top()))))
-                    {
-                        output_queue.push_back(stack.top());
-                        stack.pop();
-                        break;
-                    }
                 }
-                stack.push(tok);
-            }
-            if (tok == "(")
-            {
-                stack.push(tok);
-            }
-            if (tok == ")")
-            {
-                while (!stack.empty() && stack.top() != "(")
-                {
-                    output_queue.push_back(stack.top());
-                    stack.pop();
-                }
-                stack.pop();
             }
         }
-        return output_queue;
     }
-
+    
     //tokens is a ref to a vector of tokens, in RPN
     //double x is what x in the expression will be substitied with
-    double eval_rpn(const std::vector<std::string>& tokens, double x)
+    double eval_rpn(const std::vector<std::string>& tokens)
     {
-        double result, d1, d2;
+        double result = 0.0;
+
         std::stack<std::string> stack;
         for (const std::string& tok : tokens)
         {
-            if (is_any_op(tok))
+            if (!is_op(tok))
             {
                 stack.push(tok);
             }
             else
             {
+                double d2 = std::strtod(stack.top().c_str(), NULL);
+                stack.pop();
                 //get top 2 elements
-                if (tok == "x")
-                {
-                    d1 = x;
-                }
-                else
-                {
-                    d1 = (double)std::strtod(stack.top().c_str(), NULL);
-                    stack.pop();
-                }
-
                 if (!stack.empty())
                 {
-                    d2 = (double)std::strtod(stack.top().c_str(), NULL);
+                    double d1 = std::strtod(stack.top().c_str(), NULL);
                     stack.pop();
-                    result = eval(d1, d2, tok);
+                    result = eval(d2, d1, tok);
                     stack.push(to_string(result));
                 }
                 else
@@ -286,16 +257,17 @@ namespace parser
 
     double run_parser_and_eval(std::string& input, double x_val)
     {
-        std::vector<std::string>rpn = s_yard(input);
-        return eval_rpn(rpn, x_val);
+        std::vector<std::string>rpn = s_yard(input, x_val);
+        //std::cout << collapse_str_vec(rpn) << '\n';
+        return eval_rpn(rpn);
     }
 }
 
 
-
 int main()
 {
-    std::string a = "x + 3 + a";
-
+    std::string a = "10 + 7";
+    std::vector<std::string>rpn = parser::s_yard(a, 10);
+    std::cout << parser::collapse_str_vec(rpn) << '\n';
     return 0;
 }
