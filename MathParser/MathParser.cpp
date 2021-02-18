@@ -26,27 +26,15 @@ namespace parser
     bool is_right_assoc(const std::string& str)
     {
         int id = assoc_prec.at(str).second;
-        if (id == 1)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        if (id == 1) return true;
+        else return false;
     }
 
     bool is_left_assoc(const std::string& str)
     {
         int id = assoc_prec.at(str).second;
-        if (id == 0)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        if (id == 0) return true;
+        else return false;
     }
 
     bool is_op(const std::string& str)
@@ -55,18 +43,14 @@ namespace parser
         {
             return true;
         }
-        else
-        {
-            return false;
-        }
+        else return false;
     }
 
     bool if_in(std::vector<std::string> vec, std::string key)
     {
         if (std::find(vec.begin(), vec.end(), key) != vec.end())
             return true;
-        else
-            return false;
+        else return false;
     }
 
     bool is_func(const std::string& str)
@@ -95,10 +79,7 @@ namespace parser
         {
             return true;
         }
-        else
-        {
-            return false;
-        }
+        else return false;
     }
 
     //is_num func from https://stackoverflow.com/a/16465826
@@ -156,10 +137,7 @@ namespace parser
         {
             return assoc_prec.at(str).first;
         }
-        else
-        {
-           std::cout << "invalid operator/func\n";
-        }
+        else std::cout << "invalid operator/func\n";
     }
 
     std::string to_string(double d)
@@ -186,7 +164,7 @@ namespace parser
 
     //convert string in infix notation to string in RPN
     //using dijkstra's shunting yard algorithm 
-    std::vector<std::string> s_yard(std::string str, double x_val)
+    std::vector<std::string> s_yard(std::string str, std::string var_name, double var_val)
     {
         std::vector<std::string> tokens = tokenize(str);
         std::vector<std::string> output_queue;
@@ -194,7 +172,11 @@ namespace parser
 
         for (std::string& tok : tokens)
         {
-            if (is_num(tok))
+            if (tok == var_name)
+            {
+                output_queue.push_back(to_string(var_val));
+            }
+            else if (is_num(tok))
             {
                 output_queue.push_back(tok);
             }
@@ -244,7 +226,6 @@ namespace parser
                     output_queue.push_back(op_stack.top());
                     op_stack.pop();
                 }
-
             }
         }
         //all tokens read
@@ -258,6 +239,7 @@ namespace parser
             output_queue.push_back(op_stack.top());
             op_stack.pop();
         }
+        return output_queue;
     }
     
     //tokens is a ref to a vector of tokens, in RPN
@@ -302,19 +284,13 @@ namespace parser
         return (double)std::strtod(stack.top().c_str(), NULL);
     }
 
-    double run_parser_and_eval(std::string& input, double x_val)
-    {
-        std::vector<std::string>rpn = s_yard(input, x_val);
-        //std::cout << collapse_str_vec(rpn) << '\n';
-        return eval_rpn(rpn);
-    }
 }
 
 
 int main()
 {
     std::string a = "10 + 7";
-    std::vector<std::string>rpn = parser::s_yard(a, 10);
+    std::vector<std::string>rpn = parser::s_yard(a, "x", 10);
     std::cout << parser::collapse_str_vec(rpn) << '\n';
     return 0;
 }
