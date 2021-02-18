@@ -51,8 +51,7 @@ namespace parser
 
     bool if_in(std::vector<std::string> vec, std::string key)
     {
-        if (std::find(vec.begin(), vec.end(), key) != vec.end())
-            return true;
+        if (std::find(vec.begin(), vec.end(), key) != vec.end()) return true;
         else return false;
     }
 
@@ -62,7 +61,7 @@ namespace parser
         {
             return true;
         }
-        else if (str == "atan" || str == "atan2" || str == "cosh" || str == "sinh")
+        else if (str == "atan" || str == "cosh" || str == "sinh")
         {
             return true;
         }
@@ -70,25 +69,47 @@ namespace parser
         {
             return true;
         }
-        else if (str == "exp" || str == "frexp" || str == "ldexp" || str == "log")
+        else if (str == "exp" || str == "ldexp" || str == "log")
         {
             return true;
         }
-        else if (str == "log10" || str == "pow" || str == "sqrt" || str == "cbrt")
+        else if (str == "log10" ||  str == "sqrt" || str == "cbrt")
         {
             return true;
         }
-        else if (str == "hypot" || str == "tgamma" || str == "lgamma" || str == "ceil" || str == "floor")
+        else if (str == "tgamma" || str == "lgamma" || str == "ceil" || str == "floor")
         {
             return true;
         }
         else return false;
     }
 
-    //is_num func from https://stackoverflow.com/a/16465826
+    //checks is str is number, checks if it is negitive
+    //handls decimal numbers
     bool is_num(const std::string& s)
     {
-        return(strspn(s.c_str(), ".0123456789") == s.size());
+        int num_found_periods = 0;
+        int i = 0;
+        if (s[0] == '-')
+        {
+            i = 1; //ignore the input number's sign
+        }
+        for (; i < s.size(); i++)
+        {
+            if (s[i] == '.')
+            {
+                num_found_periods++;
+                if (num_found_periods > 1)
+                {
+                    return false;
+                }
+            }
+            if (!isdigit(s[i]) && s[i] != '.')
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     std::string collapse_str_vec(std::vector<std::string> v)
@@ -111,35 +132,6 @@ namespace parser
         return res;
     }
 
-    //TODO: implement other funcs (see is_func for list)
-    double eval(double d1, double d2, std::string type)
-    {
-        if (type == "*")
-        {
-            return d1 * d2;
-        }
-        else if (type == "+")
-        {
-            return d1 + d2;
-        }
-        else if (type == "-")
-        {
-            return d1 - d2;
-        }
-        else if (type == "/")
-        {
-            return d1 / d2;
-        }
-        else if (type == "^")
-        {
-            return std::pow(d1, d2);
-        }
-        else
-        {
-            std::cout << "invalid operation passed to func: eval\n";
-        }
-    }
-
     int get_prec(std::string str)
     {
         if (is_func(str))
@@ -150,7 +142,11 @@ namespace parser
         {
             return assoc_prec.at(str).first;
         }
-        else std::cout << "invalid operator/func\n";
+        else
+        {
+            std::cout << "invalid operator/func\n";
+            exit(-1);
+        }
     }
 
     std::string to_string(double d)
@@ -205,14 +201,16 @@ namespace parser
             {   
                 /*
                     While loop:
+                    while there are elements in the stack
                     while ((there is an operator at the top of the operator stack)
                     and ((the operator at the top of the operator stack has greater precedence)
                     or (the operator at the top of the operator stack has equal precedence and the token is left associative))
                     and (the operator at the top of the operator stack is not a left parenthesis))
                 */
-                while ((is_op(op_stack.top()) && get_prec(op_stack.top()) > (get_prec(tok)) || \
-                       (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok))) && \
-                       (op_stack.top() != "("))
+                while (!op_stack.empty() && \
+                      (is_op(op_stack.top()) && get_prec(op_stack.top()) > (get_prec(tok)) || \
+                      (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok))) && \
+                      (op_stack.top() != "("))
                 {
                     //pop operators from stack to queue
                     while (!op_stack.empty())
@@ -252,6 +250,8 @@ namespace parser
             if (op_stack.top() == "(" || op_stack.top() == ")")
             {
                 std::cout << "mismatched parentheses\n";
+                exit(-1);
+                //TODO: clear display
             }
             output_queue.push_back(op_stack.top());
             op_stack.pop();
@@ -259,48 +259,73 @@ namespace parser
         return output_queue;
     }
     
-
-    double eval_bin_op(const std::vector<std::string>& tokens)
+    double compute_binary_ops(double d1, double d2, std::string op)
     {
-        double result = 0.0;
-
-        std::stack<std::string> stack;
-        for (const std::string& tok : tokens)
+        if (op == "*")
         {
-            if (!is_op(tok))
-            {
-                stack.push(tok);
-            }
-            else
-            {
-                double d2 = std::strtod(stack.top().c_str(), NULL);
-                stack.pop();
-                //get top 2 elements
-                if (!stack.empty())
-                {
-                    double d1 = std::strtod(stack.top().c_str(), NULL);
-                    stack.pop();
-                    result = eval(d2, d1, tok);
-                    stack.push(to_string(result));
-                }
-                else
-                {
-                    if (tok == "-")
-                    {
-                        result = -(d2);
-                    }
-                    else
-                    {
-                        result = d2;
-                    }
-                }
-                stack.push(to_string(result));
-            }
+            return d1 * d2;
         }
-        return (double)std::strtod(stack.top().c_str(), NULL);
+        else if (op == "+")
+        {
+            return d1 + d2;
+        }
+        else if (op == "-")
+        {
+            return d1 - d2;
+        }
+        else if (op == "/")
+        {
+            return d1 / d2;
+        }
+        else if (op == "^")
+        {
+            return std::pow(d1, d2);
+        }
+        else
+        {
+            std::cout << "invalid operation passed to func: eval\n";
+            //TODO: clear display
+            exit(-1);
+        }
     }
 
-    //double eval_unary_op()
+    double compute_unary_ops(double d, std::string op)
+    {
+        if (op == "sin") return sin(d);
+        else if (op == "sqrt") return sqrt(d);
+        else if (op == "abs") return abs(d);
+        else if (op == "tan") return tan(d);
+        else if (op == "acos") return acos(d);
+        else if (op == "asin") return asin(d);
+        else if (op == "abs") return abs(d);
+        else if (op == "atan") return atan(d);
+        else if (op == "cosh") return cosh(d);
+        else if (op == "sinh") return sinh(d);
+        else if (op == "tanh") return tanh(d);
+        else if (op == "exp") return exp(d);
+        else if (op == "log") return log(d);
+        else if (op == "log10") return log10(d);    
+        else if (op == "cbrt") return cbrt(d);
+        else if (op == "tgamma") return tgamma(d);
+        else if (op == "lgamma") return lgamma(d);
+        else if (op == "ceil") return ceil(d);
+        else if (op == "floor") return floor(d);
+        else if (op == "acosh") return acosh(d);
+        else if (op == "asinh") return asinh(d);
+        else if (op == "atanh") return atanh(d);
+        else
+        {
+            std::cout << "invalid unary op/function\n";
+            //TODO: clear display
+            exit(-1);
+        }
+    }
+
+    double eval_rpn(const std::vector<std::string>& tokens)
+    {
+        
+    }
+
 }
 
 
