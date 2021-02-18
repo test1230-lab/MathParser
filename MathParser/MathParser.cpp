@@ -8,8 +8,11 @@
 #include <map>
 #include <stack>
 #include <sstream>
+#include <numbers>
 #include <algorithm>
 #include <cmath>
+
+#define M_PI 3.14159274101257324219
 
 namespace parser
 {
@@ -85,7 +88,7 @@ namespace parser
     //is_num func from https://stackoverflow.com/a/16465826
     bool is_num(const std::string& s)
     {
-        return(strspn(s.c_str(), "-.0123456789") == s.size());
+        return(strspn(s.c_str(), ".0123456789") == s.size());
     }
 
     std::string collapse_str_vec(std::vector<std::string> v)
@@ -94,6 +97,16 @@ namespace parser
         for (std::string& s : v)
         {
             res.append(s);
+        }
+        return res;
+    }
+
+    std::string to_lower(std::string& str)
+    {
+        std::string res;
+        for (char s : str)
+        {
+            res.push_back(std::tolower(s));
         }
         return res;
     }
@@ -172,7 +185,11 @@ namespace parser
 
         for (std::string& tok : tokens)
         {
-            if (tok == var_name)
+            if (to_lower(tok) == "pi")
+            {
+                output_queue.push_back(to_string(M_PI));
+            }
+            else if (tok == var_name)
             {
                 output_queue.push_back(to_string(var_val));
             }
@@ -242,9 +259,8 @@ namespace parser
         return output_queue;
     }
     
-    //tokens is a ref to a vector of tokens, in RPN
-    //double x is what x in the expression will be substitied with
-    double eval_rpn(const std::vector<std::string>& tokens)
+
+    double eval_bin_op(const std::vector<std::string>& tokens)
     {
         double result = 0.0;
 
@@ -284,6 +300,7 @@ namespace parser
         return (double)std::strtod(stack.top().c_str(), NULL);
     }
 
+    //double eval_unary_op()
 }
 
 
