@@ -9,6 +9,7 @@
 #include <stack>
 #include <sstream>
 #include <algorithm>
+#include <cmath>
 
 const int LEFT_ASSOC = 0;
 const int RIGHT_ASSOC = 1;
@@ -120,6 +121,35 @@ bool is_num(const std::string& s)
     return(strspn(s.c_str(), "-.0123456789") == s.size());
 }
 
+//TODO: implement other funcs (see is_func for list)
+double eval(double d1, double d2, std::string type)
+{
+    if (type == "*")
+    {
+        return d1 * d2;
+    }
+    else if (type == "+")
+    {
+        return d1 + d2;
+    }
+    else if (type == "-")
+    {
+        return d1 - d2;
+    }
+    else if (type == "/")
+    {
+        return d1 / d2;
+    }
+    else if (type == "^")
+    {
+        return std::pow(d1, d2);
+    }
+    else
+    {
+        throw std::runtime_error("invalid operation passed to func: eval");
+    }
+}
+
 int get_prec(std::string str)
 {
     if (is_func(str))
@@ -134,6 +164,13 @@ int get_prec(std::string str)
     {
         throw std::runtime_error("error thrown by func: get_prec, invalid operator/func");
     }
+}
+
+std::string to_string(double d)
+{
+    std::ostringstream strs;
+    strs << d;
+    return strs.str();
 }
 
 //tokenize func from https://stackoverflow.com/a/53921
@@ -153,17 +190,17 @@ std::vector<std::string> tokenize(const std::string str)
 
 //convert string in infix notation to string in RPN
 //using dijkstra's shunting yard algorithm
-std::string s_yard(std::string str)
+std::vector<std::string> s_yard(std::string str)
 {
     std::vector<std::string> tokens = tokenize(str);
-    std::string output_queue;
+    std::vector<std::string> output_queue;
     std::stack<std::string> stack;
 
     for (std::string &tok : tokens)
     {
         if (is_num(tok))
         {
-            output_queue.append(tok);
+            output_queue.push_back(tok);
         }
 
         if (is_any_op(tok))
@@ -172,7 +209,7 @@ std::string s_yard(std::string str)
             {
                 if ((is_left_assoc(tok) && get_prec(tok) <= get_prec(stack.top()) || (is_right_assoc(tok) && get_prec(tok) < get_prec(stack.top()))))
                 {
-                    output_queue.append(stack.top());
+                    output_queue.push_back(stack.top());
                     stack.pop();
                     break;
                 }
@@ -187,7 +224,7 @@ std::string s_yard(std::string str)
         {
             while (!stack.empty() && stack.top() != "(")
             {
-                output_queue.append(stack.top());
+                output_queue.push_back(stack.top());
                 stack.pop();
             }
             stack.pop();
@@ -196,7 +233,47 @@ std::string s_yard(std::string str)
     return output_queue;
 }
 
-double eval_rpn
+//tokens is a ref to a vector of tokens, in RPN
+//double x is what x in the expression will be substitied with
+double eval_rpn(const std::vector<std::string>& tokens, double x)
+{
+    double result, d1, d2;
+    std::stack<std::string> stack;
+    for (const std::string& tok : tokens)
+    {
+        if (is_any_op(tok))
+        {
+            stack.push(tok);
+        }
+        else
+        {
+            //get top 2 elements
+            d1 = (double)std::strtod(stack.top().c_str(), NULL);
+            stack.pop();
+            if (!stack.empty())
+            {
+                d2 = (double)std::strtod(stack.top().c_str(), NULL);
+                stack.pop();
+                result = eval(d1, d2, tok);
+                stack.push(to_string(result));
+            }
+            else
+            {
+                if (tok == "-")
+                {
+                    result = -(d2);
+                }
+                else
+                {
+                    result = d2;
+                }
+            }
+            stack.push(to_string(result));
+        }
+    }
+    return (double)std::strtod(stack.top().c_str(), NULL);
+}
+
 
 int main()
 {
