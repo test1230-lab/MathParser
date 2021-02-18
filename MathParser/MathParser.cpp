@@ -11,6 +11,9 @@
 #include <algorithm>
 #include <cmath>
 
+#define graph_range_lower -10
+#define graph_range_upper 10
+
 const int LEFT_ASSOC = 0;
 const int RIGHT_ASSOC = 1;
 
@@ -274,13 +277,21 @@ double eval_rpn(const std::vector<std::string>& tokens, double x)
     return (double)std::strtod(stack.top().c_str(), NULL);
 }
 
+std::vector<double> run_parser_and_eval(std::string& input)
+{
+    std::vector<double> res_vec;
+    for (int i = graph_range_lower; i < graph_range_upper; i++)
+    {
+        std::vector<std::string>rpn = s_yard(input);
+        double res = eval_rpn(rpn, i);
+        res_vec.push_back(res);
+    }
+    return res_vec;
+}
 
 int main()
 {
     std::string a = "x + 3 + a";
     for (auto& str : tokenize(a))
-    {
-        std::cout << str << '\n';
-    }
     return 0;
 }
