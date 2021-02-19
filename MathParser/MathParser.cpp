@@ -363,10 +363,6 @@ namespace parser
         std::stack<std::string> stack;
         for (const std::string& tok : tokens)
         {
-            std::cout << "stack size: " << stack.size() << '\n';
-            //reset d0,d1 after each iteration
-            double d0 = 0.0;
-            double d1 = 0.0;
             if (tok == var_name)
             {
                 stack.push(to_string(var_value));
@@ -375,29 +371,39 @@ namespace parser
             {
                 stack.push(tok);
             }
-            //if binary operator apply that operator to the top-most two entries on the stack
-            //pop those two entries and push the result.
-            else if (is_binary_op)
+            //handle binary operaters
+            else if(is_binary_op(tok))
             {
-                d0 = std::stod(stack.top());
+                double res = 0.0;
+                const double d2 = std::stod(stack.top());
                 stack.pop();
                 if (!stack.empty())
                 {
-                    d1 = std::stod(stack.top());
+                    const double d1 = std::stod(stack.top());
                     stack.pop();
-                    double res = compute_binary_ops(d0, d1, tok);
+                    res = compute_binary_ops(d1, d2, tok);
                     stack.push(to_string(res));
-                }            
+                }
             }
-            else if (is_func)
+            //handle funcs(unary ops)
+            else if (is_func(tok))
             {
-                d0 = std::stod(stack.top());
-                stack.pop();
-                double res = compute_unary_ops(d0, tok);
+                if (!stack.empty())
+                {
+                    double res = 0.0;
+                    const double d1 = std::stod(stack.top());
+                    stack.pop();
+                    res = compute_unary_ops(d1, tok);
+                    stack.push(to_string(res));
+                }
+            }
+            else
+            {
+                double res = 0.0; //is this ok
                 stack.push(to_string(res));
             }
+
         }
-        
         return std::stod(stack.top());
     }
 }
