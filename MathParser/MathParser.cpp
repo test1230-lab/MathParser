@@ -363,6 +363,7 @@ namespace parser
         std::stack<std::string> stack;
         for (const std::string& tok : tokens)
         {
+            std::cout << "token: " << tok << " " << "stack size: " << stack.size() << '\n';
             if (tok == var_name)
             {
                 stack.push(to_string(var_value));
