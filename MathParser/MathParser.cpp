@@ -135,8 +135,7 @@ namespace parser
         }
         else
         {
-            std::cout << "invalid operator/func\n";
-            exit(-1);
+            return 0;
         }
     }
 
@@ -276,7 +275,7 @@ namespace parser
         }
         else
         {
-            std::cout << "invalid operation passed to func: eval\n";
+            std::cout << R"(invalid operator: ")" << op << R"("  passed to func "compute_binary_ops")" << '\n';
             exit(-1);
         }
     }
@@ -306,7 +305,7 @@ namespace parser
         else if (op == "atanh") return atanh(d);
         else
         {
-            std::cout << "invalid unary op / function\n";
+            std::cout << R"(invalid operator/func : ")" << op << R"("  passed to func "compute_unary_ops")" << '\n';
             exit(-1);
         }
     }
@@ -366,10 +365,10 @@ namespace parser
 
 int main()
 {
-    std::string a;
-    std::getline(std::cin, a);
-    std::cout << a << '\n';
-    //std::string a = "sin ( 10 ) + 7 - 8 + 5 + 3";
+    //std::string a;
+    //std::getline(std::cin, a);
+    //std::cout << a << '\n';
+    std::string a = "sin ( 10 ) + 7 - 8 + ( 5 * 3 ) + pi * x";
     std::vector<std::string>rpn = parser::s_yard(a, "x");
     double res = parser::eval_rpn(rpn, "x", 10);
     std::cout << res << '\n';
