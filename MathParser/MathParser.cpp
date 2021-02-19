@@ -415,6 +415,7 @@ uint8_t data[screen_w * screen_h * channels] = { 0 };
 int main()
 {
     //first run
+    std::string var_name = "x";
     std::string a;
     std::cout << "x is assumed to be a variable\n";
     std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
@@ -429,7 +430,7 @@ int main()
     //plot
     for (int x = -screen_w / 2; x < screen_w / 2; x++)
     {
-        int y = round(parser::clip(parser::eval_rpn(rpn, "x", x), 0, screen_h));
+        int y = round(parser::clip(parser::eval_rpn(rpn, var_name, x), 0, screen_h));
         data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
         data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
         data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
@@ -452,10 +453,10 @@ int main()
         }
         else
         {
-            rpn = parser::s_yard(a, "x");
+            rpn = parser::s_yard(a, var_name);
             for (int x = -screen_w / 2; x < screen_w / 2; x++)
             {
-                int y = round(parser::clip(parser::eval_rpn(rpn, "x", x), 0, screen_h));
+                int y = round(parser::clip(parser::eval_rpn(rpn, var_name, x), 0, screen_h));
                 data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
                 data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
                 data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
