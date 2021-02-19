@@ -51,12 +51,6 @@ namespace parser
         else return false;
     }
 
-    bool if_in(std::vector<std::string> vec, std::string key)
-    {
-        if (std::find(vec.begin(), vec.end(), key) != vec.end()) return true;
-        else return false;
-    }
-
     bool is_func(const std::string& str)
     {
         if (str == "sin" || str == "tan" || str == "acos" || str == "asin" || str == "abs")
@@ -294,7 +288,6 @@ namespace parser
         else if (op == "tan") return tan(d);
         else if (op == "acos") return acos(d);
         else if (op == "asin") return asin(d);
-        else if (op == "abs") return abs(d);
         else if (op == "atan") return atan(d);
         else if (op == "log") return log(d);
         else if (op == "log10") return log10(d);
@@ -376,11 +369,5 @@ int main()
     std::vector<std::string>rpn = parser::s_yard(a, "x");
     double res = parser::eval_rpn(rpn, "x", 10);
     std::cout << res << '\n';
-    /*
-    for (auto& a : rpn)
-    {
-        std::cout << a << '\n';
-    }
-    */
     return 0;
 }
