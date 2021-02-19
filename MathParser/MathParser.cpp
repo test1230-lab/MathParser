@@ -34,6 +34,11 @@ namespace parser
                                                                  {"+", std::make_pair(2, LEFT_ASSOC)},
                                                                  {"-", std::make_pair(2, LEFT_ASSOC)} };
 
+    double clip(double n, double lower, double upper)
+    {
+        return std::max(lower, std::min(n, upper));
+    }
+
     bool is_right_assoc(const std::string& str)
     {
         int id = assoc_prec.at(str).second;
@@ -367,11 +372,6 @@ namespace parser
     }
 }
 
-double clip(double n, double lower, double upper)
-{
-    return std::max(lower, std::min(n, upper));
-}
-
 void create_canvas(uint8_t *data, int spacing)
 {
     for (int x = 0; x < screen_w/spacing; x += spacing)
@@ -411,32 +411,56 @@ void create_canvas(uint8_t *data, int spacing)
 }
 
 uint8_t data[screen_w * screen_h * channels] = { 0 };
-uint8_t blank_data[screen_w * screen_h * channels] = { 0 };
 
 int main()
 {
-    //std::vector<uint8_t> data(screen_w * screen_h  * channels, 0);
-    //std::vector<uint8_t> blank_data(screen_w * screen_h * channels, 0);
-    
-    //  sin ( 10 ) + 7 - 8 + ( 5 * 3 ) + pi * x
-    std::string a; 
+    //first run
+    std::string a;
+    std::cout << "x is assumed to be a variable\n";
+    std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
     std::cout << "input: ";
     std::getline(std::cin, a);
     std::cout << '\n';
     std::vector<std::string> rpn = parser::s_yard(a, "x");
 
+    //setup canvas
     create_canvas(data, grid_spacing);
-    create_canvas(blank_data, grid_spacing);
 
-    int count = 0;
+    //plot
     for (int x = -screen_w / 2; x < screen_w / 2; x++)
     {
-        int y = round(clip(parser::eval_rpn(rpn, "x", x), 0, screen_h));
+        int y = round(parser::clip(parser::eval_rpn(rpn, "x", x), 0, screen_h));
         data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
         data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
         data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
-        count++;
     }
-
+    //subsequent runs will be in the loop
+    for (;;)
+    {
+        //plot another line, quit, or clear
+        std::string a;
+        std::cout << R"(input "c" to clear the graph, "q" to quit the program, or type another expression(that will be ploted on top): )";
+        std::getline(std::cin, a);
+        if (parser::to_lower(a) == "q")
+        {
+            std::cout << "quitting...";
+            exit(0);
+        }
+        else if (parser::to_lower(a) == "c")
+        {
+            memset(data, 0x00, (screen_w * screen_h * channels));
+        }
+        else
+        {
+            rpn = parser::s_yard(a, "x");
+            for (int x = -screen_w / 2; x < screen_w / 2; x++)
+            {
+                int y = round(parser::clip(parser::eval_rpn(rpn, "x", x), 0, screen_h));
+                data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
+                data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
+                data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
+            }
+        }
+    }
     return 0;
 }
