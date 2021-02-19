@@ -163,10 +163,10 @@ namespace parser
 
     //params: 
     //str - string to be converted
-    //var_name - any occurances of this as a seperate token will be replaces with param: var value
+    //var_name - any occurances of this as a seperate token will be treated as a varable
     //convert string in infix notation to a string in Reverse Polish Notation
     //using dijkstra's shunting yard algorithm 
-    std::vector<std::string> s_yard(std::string str, std::string var_name, double var_val)
+    std::vector<std::string> s_yard(std::string str, std::string var_name)
     {
         std::vector<std::string> tokens = tokenize(str);
         std::vector<std::string> output_queue;
@@ -180,7 +180,7 @@ namespace parser
             }
             else if (tok == var_name)
             {
-                output_queue.push_back(to_string(var_val));
+                output_queue.push_back(tok);
             }
             else if (is_num(tok))
             {
@@ -311,16 +311,19 @@ namespace parser
         }
     }
 
-    double eval_rpn(const std::vector<std::string>& tokens)
-    {
-        
+    double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
+    {     
         std::stack<std::string> stack;
         for (const std::string& tok : tokens)
         {
             //reset d0,d1 after each iteration
             double d0 = 0.0;
             double d1 = 0.0;
-            if (is_num(tok))
+            if (tok == var_name)
+            {
+                stack.push(to_string(var_value));
+            }
+            else if (is_num(tok))
             {
                 stack.push(tok);
             }
@@ -354,8 +357,8 @@ namespace parser
 int main()
 {
     std::string a = "sin ( 10 ) + 7";
-    std::vector<std::string>rpn = parser::s_yard(a, "x", 10);
-    double res = parser::eval_rpn(rpn);
+    std::vector<std::string>rpn = parser::s_yard(a, "x");
+    double res = parser::eval_rpn(rpn, "x", 10);
     std::cout << res << '\n';
     /*
     for (auto& a : rpn)
