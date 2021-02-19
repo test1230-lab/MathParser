@@ -161,6 +161,9 @@ namespace parser
         return results;
     }
 
+    //params: 
+    //str - string to be converted
+    //var_name - any occurances of this as a seperate token will be replaces with param: var value
     //convert string in infix notation to a string in Reverse Polish Notation
     //using dijkstra's shunting yard algorithm 
     std::vector<std::string> s_yard(std::string str, std::string var_name, double var_val)
@@ -327,10 +330,13 @@ namespace parser
             {
                 d0 = std::stod(stack.top());
                 stack.pop();
-                d1 = std::stod(stack.top());
-                stack.pop();
-                double res = compute_binary_ops(d0, d1, tok);
-                stack.push(to_string(res));
+                if (!stack.empty())
+                {
+                    d1 = std::stod(stack.top());
+                    stack.pop();
+                    double res = compute_binary_ops(d0, d1, tok);
+                    stack.push(to_string(res));
+                }            
             }
             else if (is_func)
             {
