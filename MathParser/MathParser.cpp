@@ -92,13 +92,13 @@ namespace parser
     {
         int num_found_periods = 0;
         int i = 0;
-        if (s[0] == '-')
-        {
-            i = 1; //ignore the input number's sign
-        }
         if (s[0] == '-' && s.size() < 2)
         {
             return 0;
+        }
+        if (s[0] == '-')
+        {
+            i = 1; //ignore the input number's sign
         }
         for (; i < s.size(); i++)
         {
