@@ -8,17 +8,18 @@
 #include <map>
 #include <stack>
 #include <sstream>
-#include <numbers>
-#include <chrono>
 #include <algorithm>
-#include <array>
 #include <cmath>
+#include <SDL.h>
+#include <SDL_image.h>
+#undef main
 
-#define M_PI 3.14159274101257324219
-#define screen_w 640
-#define screen_h 640
-#define channels 3
-#define grid_spacing 64
+//#define M_PI 3.14159274101257324219
+constexpr int screen_w = 640;
+constexpr int screen_h = 640;
+constexpr int channels = 3;
+constexpr int grid_spacing = 64;
+constexpr int scale_factor = 150;
 
 //should i do using namespace std?
 
@@ -379,11 +380,11 @@ void create_canvas(uint8_t *data, int spacing)
         for (int y = 0; y < screen_h; y++)
         {
             data[x + y * screen_w + 0 * screen_h *screen_w] = 255;
-            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
-            data[x + y * screen_w + 2 * screen_h * screen_w] = 255;
+            data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
+            data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
         }
     }
-
+   
     for (int x = 0; x < screen_w; x++)
     {
         for (int y = 0; y < screen_h/spacing; y += spacing)
@@ -393,7 +394,7 @@ void create_canvas(uint8_t *data, int spacing)
             data[x + y * screen_w + 2 * screen_h * screen_w] = 255;
         }
     }
-
+    
     //axises green
     for (int y = 0; y < screen_h; y++)
     {
@@ -410,58 +411,126 @@ void create_canvas(uint8_t *data, int spacing)
     }
 }
 
+int map_to_screen(int a)
+{
+    if (a < 0)
+    {
+        return (screen_h / 2) - a;
+    }
+    else
+    {
+        return (screen_h / 2) + a;
+    }
+}
+
+void display_image(uint8_t* data, SDL_Window* window)
+{
+    SDL_RWops* rw = SDL_RWFromMem(data, sizeof(data));
+    SDL_Surface* image = IMG_Load_RW(rw, 1);
+}
+
+
 uint8_t data[screen_w * screen_h * channels] = { 0 };
+uint8_t blank[screen_w * screen_h * channels] = { 0 };
+
 
 int main()
 {
-    //first run
+    bool quit = false;
+    bool first_iter = true;
+
     std::string var_name = "x";
-    std::string a;
-    std::cout << "x is assumed to be a variable\n";
-    std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
-    std::cout << "input: ";
-    std::getline(std::cin, a);
-    std::cout << '\n';
-    std::vector<std::string> rpn = parser::s_yard(a, "x");
+
+    SDL_Event event;
+
+    SDL_Init(SDL_INIT_VIDEO);
+
+    SDL_Window* window = SDL_CreateWindow("Graphing Calculator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, 0);
+    SDL_Surface* s2 = SDL_GetWindowSurface(window);
 
     //setup canvas
     create_canvas(data, grid_spacing);
+    create_canvas(blank, grid_spacing);
 
-    //plot
-    for (int x = -screen_w / 2; x < screen_w / 2; x++)
+    while (!quit)
     {
-        int y = round(parser::clip(parser::eval_rpn(rpn, var_name, x), 0, screen_h));
-        data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
-        data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
-        data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
-    }
-    //subsequent runs will be in the loop
-    for (;;)
-    {
-        //plot another line, quit, or clear
-        std::string a;
-        std::cout << R"(input "c" to clear the graph, "q" to quit the program, or type another expression(that will be ploted on top): )";
-        std::getline(std::cin, a);
-        if (parser::to_lower(a) == "q")
+        SDL_WaitEvent(&event);
+
+        if (event.type == SDL_QUIT)
         {
-            std::cout << "quitting...";
-            exit(0);
-        }
-        else if (parser::to_lower(a) == "c")
-        {
-            memset(data, 0x00, (screen_w * screen_h * channels));
+            quit = true;
+            break;
         }
         else
         {
-            rpn = parser::s_yard(a, var_name);
-            for (int x = -screen_w / 2; x < screen_w / 2; x++)
+            if (first_iter)
             {
-                int y = round(parser::clip(parser::eval_rpn(rpn, var_name, x), 0, screen_h));
-                data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
-                data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
-                data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
+                //first run  
+                std::string a;
+                std::cout << "x is assumed to be a variable\n";
+                std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
+                std::cout << "input: ";
+                std::getline(std::cin, a);
+                std::cout << '\n';
+                std::vector<std::string> rpn = parser::s_yard(a, "x");
+
+                //plot
+                int c = 0;
+                for (int x = -screen_w / 2; x < screen_w / 2; x++)
+                {
+                    double temp = scale_factor * parser::eval_rpn(rpn, var_name, x);
+                    int y = round(temp);
+                    y = parser::clip(map_to_screen(y), 0, screen_h);
+                    std::cout << y << '\n';
+                    data[c + y * screen_w + 0 * screen_h * screen_w] = 255;
+                    data[c + y * screen_w + 1 * screen_h * screen_w] = 0;
+                    data[c + y * screen_w + 2 * screen_h * screen_w] = 0;
+                }
+
+                //load image from memory
+
+                first_iter = false;
             }
+            else
+            {
+                //plot another line, quit, or clear
+                std::string a;
+                std::cout << R"(input "c" to clear the graph, "q" to quit the program, or type another expression(that will be ploted on top): )";
+                std::getline(std::cin, a);
+                if (parser::to_lower(a) == "q")
+                {
+                    std::cout << "quitting...";
+                    quit = true;
+                }
+                else if (parser::to_lower(a) == "c")
+                {
+                    //revert the image back to just a grid
+                    std::copy(std::begin(blank), std::end(blank), std::begin(data));
+                }
+                else
+                {
+                    std::vector<std::string>rpn = parser::s_yard(a, var_name);
+                    for (int x = -screen_w / 2; x < screen_w / 2; x++)
+                    {
+                        double temp = scale_factor * parser::eval_rpn(rpn, var_name, x);
+                        int y = round(temp);
+                        y = parser::clip(map_to_screen(y),0, screen_h);
+                        data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
+                        data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
+                        data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
+                    }
+                    //load image from memory
+
+                }
+            }    
         }
     }
+
+    SDL_DestroyTexture(texture);
+    SDL_FreeSurface(image);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
     return 0;
 }

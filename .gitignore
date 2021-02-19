@@ -339,6 +339,8 @@ ASALocalRun/
 #sdl
 .SDL2/
 SDL2/
+.SDL2_img/
+SDL2_img/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
