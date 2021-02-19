@@ -89,7 +89,7 @@ namespace parser
         int i = 0;
         if (s[0] == '-' && s.size() < 2)
         {
-            return 0;
+            return false;
         }
         if (s[0] == '-')
         {
