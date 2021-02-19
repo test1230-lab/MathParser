@@ -118,7 +118,7 @@ namespace parser
         return true;
     }
 
-    std::string to_lower(std::string& str)
+    std::string to_lower(const std::string& str)
     {
         std::string res;
         for (char s : str)
@@ -317,64 +317,21 @@ namespace parser
         }
     }
 
-    /*
     double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
     {     
         std::stack<std::string> stack;
         for (const std::string& tok : tokens)
         {
-            std::cout << "stack size: " << stack.size() << '\n';
-            //reset d0,d1 after each iteration
-            double d0 = 0.0;
-            double d1 = 0.0;
-            if (tok == var_name)
+            if (to_lower(tok) == "pi")
+            {
+                stack.push(to_string(M_PI));
+            }
+            else if (tok == var_name)
             {
                 stack.push(to_string(var_value));
             }
             else if (is_num(tok))
             {
-                stack.push(tok);
-            }
-            //if binary operator apply that operator to the top-most two entries on the stack
-            //pop those two entries and push the result.
-            else if (is_binary_op)
-            {
-                d0 = std::stod(stack.top());
-                stack.pop();
-                if (!stack.empty())
-                {
-                    d1 = std::stod(stack.top());
-                    stack.pop();
-                    double res = compute_binary_ops(d0, d1, tok);
-                    stack.push(to_string(res));
-                }            
-            }
-            else if (is_func)
-            {
-                d0 = std::stod(stack.top());
-                stack.pop();
-                double res = compute_unary_ops(d0, tok);
-                stack.push(to_string(res));
-            }
-        }
-        
-        return std::stod(stack.top());
-    }
-    */
-
-    double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
-    {     
-        std::stack<std::string> stack;
-        for (const std::string& tok : tokens)
-        {
-            
-            if (tok == var_name)
-            {
-                stack.push(to_string(var_value));
-            }
-            else if (is_num(tok))
-            {
-                std::cout << "token: " << tok << " " << "stack size: " << stack.size() << '\n';
                 stack.push(tok);
             }
             //handle binary operaters
@@ -384,8 +341,7 @@ namespace parser
                 const double d2 = std::stod(stack.top());
                 stack.pop();
                 if (!stack.empty())
-                {
-                    
+                {       
                     const double d1 = std::stod(stack.top());
                     stack.pop();
                     res = compute_binary_ops(d1, d2, tok);
@@ -406,8 +362,7 @@ namespace parser
             }
             else
             {
-                double res = 0.0; //is this ok
-                stack.push(to_string(res));
+                continue;
             }
 
         }
