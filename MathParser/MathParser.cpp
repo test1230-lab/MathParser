@@ -11,11 +11,14 @@
 #include <numbers>
 #include <chrono>
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 #define M_PI 3.14159274101257324219
 #define screen_w 640
 #define screen_h 640
+#define channels 3
+#define grid_spacing 64
 
 //should i do using namespace std?
 
@@ -364,13 +367,72 @@ namespace parser
     }
 }
 
-uint8_t data[screen_w * screen_h * 3] = { 0 };
+void create_canvas(std::vector<uint8_t> &data, int spacing)
+{
+    for (int x = 0; x < screen_w/spacing; x += spacing)
+    {
+        for (int y = 0; y < screen_h; y++)
+        {
+            std::cout << "x: " << x << " y: " << y << '\n';
+            std::cout << data.size() << " size" << '\n';
+            std::cout << (x * screen_w * screen_h + y * screen_h + 0) << '\n';
+            data[x * screen_w * screen_h + y * screen_h + 0] = 255;
+            data[x * screen_w * screen_h + y * screen_h + 1] = 255;
+            data[x * screen_w * screen_h + y * screen_h + 2] = 255;
+        }
+    }
+
+    for (int x = 0; x < screen_w; x++)
+    {
+        for (int y = 0; y < screen_h/spacing; y += spacing)
+        {
+            data[x * screen_w * screen_h + y * screen_h + 0] = 255;
+            data[x * screen_w * screen_h + y * screen_h + 1] = 255;
+            data[x * screen_w * screen_h + y * screen_h + 2] = 255;
+        }
+    }
+
+    //y axis green
+    for (int y = 0; y < screen_h; y++)
+    {
+        data[0 * screen_w * screen_h + y * screen_h + 0] = 255;
+        data[0 * screen_w * screen_h + y * screen_h + 1] = 255;
+        data[0 * screen_w * screen_h + y * screen_h + 2] = 255;
+    }
+    //x axis
+    for (int x = 0; x < screen_h; x++)
+    {
+        data[x * screen_w * screen_h + 0 * screen_h + 0] = 255;
+        data[x * screen_w * screen_h + 0 * screen_h + 1] = 255;
+        data[x * screen_w * screen_h + 0 * screen_h + 2] = 255;
+    }
+}
+
 
 int main()
 {
-    std::string a;
-    std::cout
+    std::vector<uint8_t> data(screen_w * screen_h  * channels, 0);
+    std::vector<uint8_t> blank_data(screen_w * screen_h * channels, 0);
+    
+    //  sin ( 10 ) + 7 - 8 + ( 5 * 3 ) + pi * x
+    std::string a; 
+    std::cout << "input: ";
     std::getline(std::cin, a);
+    std::cout << '\n';
+    std::vector<std::string> rpn = parser::s_yard(a, "x");
+
+    create_canvas(data, grid_spacing);
+    create_canvas(blank_data, grid_spacing);
+
+    int count = 0;
+    for (int x = -screen_w / 2; x < screen_w / 2; x++)
+    {
+        int y = round(parser::eval_rpn(rpn, "x", x));
+        data[x * screen_w * screen_h + y * screen_h + 0] = 255;
+        data[x * screen_w * screen_h + y * screen_h + 1] = 0;
+        data[x * screen_w * screen_h + y * screen_h + 2] = 0;
+        count++;
+    }
 
     return 0;
 }
