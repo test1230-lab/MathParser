@@ -14,6 +14,8 @@
 #include <cmath>
 
 #define M_PI 3.14159274101257324219
+#define screen_w 640
+#define screen_h 640
 
 //should i do using namespace std?
 
@@ -116,7 +118,7 @@ namespace parser
     std::string to_lower(const std::string& str)
     {
         std::string res;
-        for (char s : str)
+        for (const char &s : str)
         {
             res.push_back(std::tolower(s));
         }
@@ -362,27 +364,13 @@ namespace parser
     }
 }
 
+uint8_t data[screen_w * screen_h * 3] = { 0 };
 
 int main()
 {
-    //std::string a = "sin ( 10 ) + 7 - 8 + ( 5 * 3 ) + pi * x";
-    std::cout << "input: ";
     std::string a;
+    std::cout
     std::getline(std::cin, a);
-    std::cout <<'\n';
-    std::vector<std::string>rpn = parser::s_yard(a, "x");
-    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-    for (int j = 0; j < 20000; j++)
-    {
-        for (int x = -10; x < 10; x++)
-        {
-            double res = parser::eval_rpn(rpn, "x", x);
-        }
-    }
-
-    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-    std::cout << (time_span.count()/400000)*10000 << " microseconds per operation average\n";
 
     return 0;
 }
