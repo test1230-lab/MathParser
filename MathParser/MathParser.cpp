@@ -9,6 +9,7 @@
 #include <stack>
 #include <sstream>
 #include <numbers>
+#include <chrono>
 #include <algorithm>
 #include <cmath>
 
@@ -365,7 +366,10 @@ namespace parser
 
 int main()
 {
-    std::string a = "sin ( 10 ) + 7 - 8 + 5 + 3";
+    std::string a;
+    std::getline(std::cin, a);
+    std::cout << a << '\n';
+    //std::string a = "sin ( 10 ) + 7 - 8 + 5 + 3";
     std::vector<std::string>rpn = parser::s_yard(a, "x");
     double res = parser::eval_rpn(rpn, "x", 10);
     std::cout << res << '\n';
