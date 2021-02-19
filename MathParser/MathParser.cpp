@@ -367,18 +367,20 @@ namespace parser
     }
 }
 
-void create_canvas(std::vector<uint8_t> &data, int spacing)
+double clip(double n, double lower, double upper)
+{
+    return std::max(lower, std::min(n, upper));
+}
+
+void create_canvas(uint8_t *data, int spacing)
 {
     for (int x = 0; x < screen_w/spacing; x += spacing)
     {
         for (int y = 0; y < screen_h; y++)
         {
-            std::cout << "x: " << x << " y: " << y << '\n';
-            std::cout << data.size() << " size" << '\n';
-            std::cout << (x * screen_w * screen_h + y * screen_h + 0) << '\n';
-            data[x * screen_w * screen_h + y * screen_h + 0] = 255;
-            data[x * screen_w * screen_h + y * screen_h + 1] = 255;
-            data[x * screen_w * screen_h + y * screen_h + 2] = 255;
+            data[x + y * screen_w + 0 * screen_h *screen_w] = 255;
+            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
+            data[x + y * screen_w + 2 * screen_h * screen_w] = 255;
         }
     }
 
@@ -386,33 +388,35 @@ void create_canvas(std::vector<uint8_t> &data, int spacing)
     {
         for (int y = 0; y < screen_h/spacing; y += spacing)
         {
-            data[x * screen_w * screen_h + y * screen_h + 0] = 255;
-            data[x * screen_w * screen_h + y * screen_h + 1] = 255;
-            data[x * screen_w * screen_h + y * screen_h + 2] = 255;
+            data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
+            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
+            data[x + y * screen_w + 2 * screen_h * screen_w] = 255;
         }
     }
 
-    //y axis green
+    //axises green
     for (int y = 0; y < screen_h; y++)
     {
-        data[0 * screen_w * screen_h + y * screen_h + 0] = 255;
-        data[0 * screen_w * screen_h + y * screen_h + 1] = 255;
-        data[0 * screen_w * screen_h + y * screen_h + 2] = 255;
+        data[0 + y * screen_w + 0 * screen_h * screen_w] = 0;
+        data[0 + y * screen_w + 1 * screen_h * screen_w] = 255;
+        data[0 + y * screen_w + 2 * screen_h * screen_w] = 0;
     }
     //x axis
     for (int x = 0; x < screen_h; x++)
     {
-        data[x * screen_w * screen_h + 0 * screen_h + 0] = 255;
-        data[x * screen_w * screen_h + 0 * screen_h + 1] = 255;
-        data[x * screen_w * screen_h + 0 * screen_h + 2] = 255;
+        data[x + 0 * screen_w + 0 * screen_h * screen_w] = 0;
+        data[x + 0 * screen_w + 1 * screen_h * screen_w] = 255;
+        data[x + 0 * screen_w + 2 * screen_h * screen_w] = 0;
     }
 }
 
+uint8_t data[screen_w * screen_h * channels] = { 0 };
+uint8_t blank_data[screen_w * screen_h * channels] = { 0 };
 
 int main()
 {
-    std::vector<uint8_t> data(screen_w * screen_h  * channels, 0);
-    std::vector<uint8_t> blank_data(screen_w * screen_h * channels, 0);
+    //std::vector<uint8_t> data(screen_w * screen_h  * channels, 0);
+    //std::vector<uint8_t> blank_data(screen_w * screen_h * channels, 0);
     
     //  sin ( 10 ) + 7 - 8 + ( 5 * 3 ) + pi * x
     std::string a; 
@@ -427,10 +431,10 @@ int main()
     int count = 0;
     for (int x = -screen_w / 2; x < screen_w / 2; x++)
     {
-        int y = round(parser::eval_rpn(rpn, "x", x));
-        data[x * screen_w * screen_h + y * screen_h + 0] = 255;
-        data[x * screen_w * screen_h + y * screen_h + 1] = 0;
-        data[x * screen_w * screen_h + y * screen_h + 2] = 0;
+        int y = round(clip(parser::eval_rpn(rpn, "x", x), 0, screen_h));
+        data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
+        data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
+        data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
         count++;
     }
 
