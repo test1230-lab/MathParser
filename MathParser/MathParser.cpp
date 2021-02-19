@@ -40,7 +40,7 @@ namespace parser
         else return false;
     }
 
-    bool is_op(const std::string& str)
+    bool is_binary_op(const std::string& str)
     {
         if (str == "%" || str == "/" || str == "*" || str == "+" || str == "-")
         {
@@ -112,16 +112,6 @@ namespace parser
         return true;
     }
 
-    std::string collapse_str_vec(std::vector<std::string> v)
-    {
-        std::string res;
-        for (std::string& s : v)
-        {
-            res.append(s);
-        }
-        return res;
-    }
-
     std::string to_lower(std::string& str)
     {
         std::string res;
@@ -132,13 +122,13 @@ namespace parser
         return res;
     }
 
-    int get_prec(std::string str)
+    int get_prec(const std::string str)
     {
         if (is_func(str))
         {
-            return 51;
+            return 1; //TODO: check it this is the correct value
         }
-        else if (is_op(str))
+        else if (is_binary_op(str))
         {
             return assoc_prec.at(str).first;
         }
@@ -197,7 +187,7 @@ namespace parser
             {
                 op_stack.push(tok);
             }
-            else if (is_op(tok))
+            else if (is_binary_op(tok))
             {   
                 /*
                     While loop:
@@ -208,7 +198,7 @@ namespace parser
                     and (the operator at the top of the operator stack is not a left parenthesis))
                 */
                 while (!op_stack.empty() && \
-                      (is_op(op_stack.top()) && get_prec(op_stack.top()) > (get_prec(tok)) || \
+                      (is_binary_op(op_stack.top()) && get_prec(op_stack.top()) > (get_prec(tok)) || \
                       (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok))) && \
                       (op_stack.top() != "("))
                 {
@@ -258,7 +248,7 @@ namespace parser
         return output_queue;
     }
     
-    double compute_binary_ops(double d1, double d2, std::string op)
+    double compute_binary_ops(double d1, double d2, const std::string op)
     {
         if (op == "*")
         {
@@ -287,7 +277,7 @@ namespace parser
         }
     }
 
-    double compute_unary_ops(double d, std::string op)
+    double compute_unary_ops(double d, const std::string op)
     {
         if (op == "sin") return sin(d);
         else if (op == "sqrt") return sqrt(d);
@@ -302,7 +292,7 @@ namespace parser
         else if (op == "cosh") return cosh(d);
         else if (op == "sinh") return sinh(d);
         else if (op == "tanh") return tanh(d);
-        else if (op == "exp") return exp(d); 
+        else if (op == "exp") return exp(d);
         else if (op == "cbrt") return cbrt(d);
         else if (op == "tgamma") return tgamma(d);
         else if (op == "lgamma") return lgamma(d);
@@ -314,16 +304,44 @@ namespace parser
         else
         {
             std::cout << "invalid unary op / function\n";
-            //TODO: clear display
             exit(-1);
         }
     }
 
-    //double eval_rpn(const std::vector<std::string>& tokens)
-    //{
+    double eval_rpn(const std::vector<std::string>& tokens)
+    {
         
-    //}
-
+        std::stack<std::string> stack;
+        for (const std::string& tok : tokens)
+        {
+            //reset d0,d1 after each iteration
+            double d0 = 0.0;
+            double d1 = 0.0;
+            if (is_num(tok))
+            {
+                stack.push(tok);
+            }
+            //if binary operator apply that operator to the top-most two entries on the stack
+            //pop those two entries and push the result.
+            else if (is_binary_op)
+            {
+                d0 = std::stod(stack.top());
+                stack.pop();
+                d1 = std::stod(stack.top());
+                stack.pop();
+                double res = compute_binary_ops(d0, d1, tok);
+                stack.push(to_string(res));
+            }
+            else if (is_func)
+            {
+                d0 = std::stod(stack.top());
+                stack.pop();
+                double res = compute_unary_ops(d0, tok);
+                stack.push(to_string(res));
+            }
+        }
+        return std::stod(stack.top());
+    }
 }
 
 
@@ -331,6 +349,13 @@ int main()
 {
     std::string a = "sin ( 10 ) + 7";
     std::vector<std::string>rpn = parser::s_yard(a, "x", 10);
-    std::cout << parser::collapse_str_vec(rpn) << '\n';
+    double res = parser::eval_rpn(rpn);
+    std::cout << res << '\n';
+    /*
+    for (auto& a : rpn)
+    {
+        std::cout << a << '\n';
+    }
+    */
     return 0;
 }
