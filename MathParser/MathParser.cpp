@@ -157,7 +157,7 @@ namespace parser
     }
 
     //tokenize func from https://stackoverflow.com/a/53921
-    //spits by whitespace
+    //spits using regex
     std::vector<std::string> tokenize(const std::string str)
     {
         // construct a stream from the string
