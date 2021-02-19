@@ -96,6 +96,10 @@ namespace parser
         {
             i = 1; //ignore the input number's sign
         }
+        if (s[0] == '-' && s.size() < 2)
+        {
+            return 0;
+        }
         for (; i < s.size(); i++)
         {
             if (s[i] == '.')
@@ -363,13 +367,14 @@ namespace parser
         std::stack<std::string> stack;
         for (const std::string& tok : tokens)
         {
-            std::cout << "token: " << tok << " " << "stack size: " << stack.size() << '\n';
+            
             if (tok == var_name)
             {
                 stack.push(to_string(var_value));
             }
             else if (is_num(tok))
             {
+                std::cout << "token: " << tok << " " << "stack size: " << stack.size() << '\n';
                 stack.push(tok);
             }
             //handle binary operaters
@@ -380,6 +385,7 @@ namespace parser
                 stack.pop();
                 if (!stack.empty())
                 {
+                    
                     const double d1 = std::stod(stack.top());
                     stack.pop();
                     res = compute_binary_ops(d1, d2, tok);
