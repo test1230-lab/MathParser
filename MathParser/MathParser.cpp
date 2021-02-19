@@ -365,12 +365,24 @@ namespace parser
 
 int main()
 {
-    //std::string a;
-    //std::getline(std::cin, a);
-    //std::cout << a << '\n';
-    std::string a = "sin ( 10 ) + 7 - 8 + ( 5 * 3 ) + pi * x";
+    //std::string a = "sin ( 10 ) + 7 - 8 + ( 5 * 3 ) + pi * x";
+    std::cout << "input: ";
+    std::string a;
+    std::getline(std::cin, a);
+    std::cout <<'\n';
     std::vector<std::string>rpn = parser::s_yard(a, "x");
-    double res = parser::eval_rpn(rpn, "x", 10);
-    std::cout << res << '\n';
+    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+    for (int j = 0; j < 20000; j++)
+    {
+        for (int x = -10; x < 10; x++)
+        {
+            double res = parser::eval_rpn(rpn, "x", x);
+        }
+    }
+
+    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+    std::cout << (time_span.count()/400000)*10000 << " microseconds per operation average\n";
+
     return 0;
 }
