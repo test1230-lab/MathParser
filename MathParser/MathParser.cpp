@@ -14,6 +14,8 @@
 
 #define M_PI 3.14159274101257324219
 
+//should i do using namespace std?
+
 namespace parser
 {
     const int LEFT_ASSOC = 0;
@@ -311,11 +313,13 @@ namespace parser
         }
     }
 
+    /*
     double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
     {     
         std::stack<std::string> stack;
         for (const std::string& tok : tokens)
         {
+            std::cout << "stack size: " << stack.size() << '\n';
             //reset d0,d1 after each iteration
             double d0 = 0.0;
             double d1 = 0.0;
@@ -349,6 +353,51 @@ namespace parser
                 stack.push(to_string(res));
             }
         }
+        
+        return std::stod(stack.top());
+    }
+    */
+
+    double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
+    {     
+        std::stack<std::string> stack;
+        for (const std::string& tok : tokens)
+        {
+            std::cout << "stack size: " << stack.size() << '\n';
+            //reset d0,d1 after each iteration
+            double d0 = 0.0;
+            double d1 = 0.0;
+            if (tok == var_name)
+            {
+                stack.push(to_string(var_value));
+            }
+            else if (is_num(tok))
+            {
+                stack.push(tok);
+            }
+            //if binary operator apply that operator to the top-most two entries on the stack
+            //pop those two entries and push the result.
+            else if (is_binary_op)
+            {
+                d0 = std::stod(stack.top());
+                stack.pop();
+                if (!stack.empty())
+                {
+                    d1 = std::stod(stack.top());
+                    stack.pop();
+                    double res = compute_binary_ops(d0, d1, tok);
+                    stack.push(to_string(res));
+                }            
+            }
+            else if (is_func)
+            {
+                d0 = std::stod(stack.top());
+                stack.pop();
+                double res = compute_unary_ops(d0, tok);
+                stack.push(to_string(res));
+            }
+        }
+        
         return std::stod(stack.top());
     }
 }
@@ -356,7 +405,7 @@ namespace parser
 
 int main()
 {
-    std::string a = "sin ( 10 ) + 7";
+    std::string a = "sin ( 10 ) + 7 - 8 + 5 + 3";
     std::vector<std::string>rpn = parser::s_yard(a, "x");
     double res = parser::eval_rpn(rpn, "x", 10);
     std::cout << res << '\n';
