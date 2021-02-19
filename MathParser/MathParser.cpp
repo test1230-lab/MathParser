@@ -364,7 +364,6 @@ namespace parser
             {
                 continue;
             }
-
         }
         return std::stod(stack.top());
     }
