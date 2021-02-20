@@ -14,8 +14,8 @@
 #include <SDL_image.h>
 #undef main
 
-
-constexpr double PI = 3.141592741012573242;
+//constexpr double PI = 3.141592741012573242;
+constexpr double PI = 3.14159274;
 constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int channels = 3;
@@ -188,7 +188,7 @@ namespace parser
         {
             if (to_lower(tok) == "pi")
             {
-                output_queue.push_back(to_string(M_PI));
+                output_queue.push_back(to_string(PI));
             }
             else if (tok == var_name)
             {
@@ -376,13 +376,14 @@ namespace parser
 
 void create_canvas(uint32_t *data, int spacing)
 {
+    //create grid  
     for (int x = 0; x < screen_w/spacing; x += spacing)
     {
         for (int y = 0; y < screen_h; y++)
         {
-            data[x + y * screen_w + 0 * screen_h * screen_w] = 0xFFFF0000;
-            data[x + y * screen_w + 1 * screen_h * screen_w] = 0xFFFF0000;
-            data[x + y * screen_w + 2 * screen_h * screen_w] = 0xFFFF0000;
+            data[x + y * screen_w + 0 * screen_h * screen_w] = 0;
+            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
+            data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
         }
     }
    
@@ -390,25 +391,25 @@ void create_canvas(uint32_t *data, int spacing)
     {
         for (int y = 0; y < screen_h/spacing; y += spacing)
         {
-            data[x + y * screen_w + 0 * screen_h * screen_w] = 0xFFFF0000;
-            data[x + y * screen_w + 1 * screen_h * screen_w] = 0xFFFF0000;
-            data[x + y * screen_w + 2 * screen_h * screen_w] = 0xFFFF0000;
+            data[x + y * screen_w + 0 * screen_h * screen_w] = 0;
+            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
+            data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
         }
     }
     
-    //axises green
+    //y axis
     for (int y = 0; y < screen_h; y++)
     {
-        data[0 + y * screen_w + 0 * screen_h * screen_w] = 0x00000000;
-        data[0 + y * screen_w + 1 * screen_h * screen_w] = 0xFFFF0000;
-        data[0 + y * screen_w + 2 * screen_h * screen_w] = 0x00000000;
+        data[0 + y * screen_w + 0 * screen_h * screen_w] = 255;
+        data[0 + y * screen_w + 1 * screen_h * screen_w] = 255;
+        data[0 + y * screen_w + 2 * screen_h * screen_w] = 255;
     }
     //x axis
     for (int x = 0; x < screen_h; x++)
     {
-        data[x + 0 * screen_w + 0 * screen_h * screen_w] = 0x00000000;
-        data[x + 0 * screen_w + 1 * screen_h * screen_w] = 0xFFFF0000;
-        data[x + 0 * screen_w + 2 * screen_h * screen_w] = 0x00000000;
+        data[x + 0 * screen_w + 0 * screen_h * screen_w] = 255;
+        data[x + 0 * screen_w + 1 * screen_h * screen_w] = 255;
+        data[x + 0 * screen_w + 2 * screen_h * screen_w] = 255;
     }
 }
 
@@ -424,8 +425,8 @@ int map_to_screen(int a)
     }
 }
 
-uint32_t data[screen_w * screen_h * channels] = { 0 };
-uint32_t blank[screen_w * screen_h * channels] = { 0 };
+//int32_t data[screen_w * screen_h * channels] = { 0 };
+//uint32_t blank[screen_w * screen_h * channels] = { 0 };
 
 int main()
 {
@@ -434,40 +435,9 @@ int main()
 
     std::string var_name = "x";
 
-    SDL_Event event;
-
-    SDL_Init(SDL_INIT_VIDEO);
-
-    SDL_Window* window = SDL_CreateWindow("Graphing Calculator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, 0);
-    SDL_Renderer* renderer = NULL;
-    SDL_Texture* tex = NULL;
-
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-    tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, screen_w, screen_h);
-
-    //uint32_t* data = new uint32_t[screen_w * screen_h * channels];
-    //uint32_t* blank = new uint32_t[screen_w * screen_h * channels];
-
-    //setup canvas
-    create_canvas(data, grid_spacing);
-    create_canvas(blank, grid_spacing);
-
-    int pitch;
-    void* tex_pixels;
-    SDL_LockTexture(tex, nullptr, &tex_pixels, &pitch);
-    std::cout << pitch << '\n';
-    memcpy(tex_pixels, data, static_cast<size_t>(pitch));
-    SDL_UnlockTexture(tex);
-
-    //draw image data
-    SDL_UpdateTexture(tex, NULL, data, sizeof(data));
-    SDL_RenderCopy(renderer, tex, NULL, NULL);
-    SDL_RenderPresent(renderer);
-
+ 
     while (!quit)
     {
-        SDL_WaitEvent(&event);
 
         if (event.type == SDL_QUIT)
         {
@@ -498,10 +468,6 @@ int main()
                     data[c + y * screen_w + 1 * screen_h * screen_w] = 0;
                     data[c + y * screen_w + 2 * screen_h * screen_w] = 0;
                 }
-                //display image
-
-                SDL_UpdateWindowSurface(window);
-
                 first_iter = false;
             }
             else
@@ -517,7 +483,7 @@ int main()
                 }
                 else if (parser::to_lower(a) == "c")
                 {
-                    
+                    //reset graph
                 }
                 else
                 {
@@ -531,13 +497,17 @@ int main()
                         data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
                         data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
                     }
-                    //display image
-
                 }
-            }    
-        }
-    }
+            }
 
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, texture, NULL, NULL);
+            SDL_RenderPresent(renderer);
+        }
+
+    }
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 
