@@ -21,13 +21,12 @@ constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int channels = 3;
 constexpr int grid_spacing = 32;
-constexpr int scale_factor = 2;
 constexpr const char* win_title = "Graphing Calc";
 constexpr int32_t g_kRenderDeviceFlags = -1;
 constexpr  int32_t g_kErrorOccurred = -1;
 int range_upper = 10;
 int range_lower = -10;
-constexpr float pt_step_count = 1000;
+constexpr float pt_step_count = 320;
 
 //should i do using namespace std?
 
@@ -447,6 +446,7 @@ namespace disp
             SDL_DestroyWindow(*ppWindow);
             *ppWindow = nullptr;
         }
+        exit(-1);
     }
 
     // Initialize SDL Components 
@@ -598,6 +598,7 @@ int main()
 
     uint32_t* data = new uint32_t[screen_w * screen_h];
 
+    SDL_Event event;
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
@@ -617,48 +618,36 @@ int main()
         return -1;
     }
 
-    while (running)
+    for (;;)
     {
-        if (first_iter)
+        while (SDL_PollEvent(&event))
         {
-            disp::Render(pWindow, pRenderer, pTexture, data);
-            std::string a;
-            std::cout << "x is assumed to be a variable\n";
-            std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
-            std::cout << "input: ";
-            std::getline(std::cin, a);
-            std::cout << '\n';
-            std::vector<std::string> rpn = parser::s_yard(a, "x");
-
-            //plot
-            int c = 0;
-            const int ratio = screen_w / range_upper;
-            for (int x = range_lower* pt_step_count; x < range_upper* pt_step_count; x++)
+            if (event.type == SDL_QUIT)
             {
-                float tx = x / pt_step_count;
-                double ty = parser::eval_rpn(rpn, var_name, tx);
-                
-                tx *= (screen_w / range_upper);
-                ty *= (screen_w / range_upper);
-                
-                int ix = round(tx/2.f);
-                int iy = round(ty/2.f);
-                
-                ix += screen_w/2;
-                iy += screen_h/2;
-                //std::cout << "x:" << ix << " y:" << iy << '\n';
-
-                if (ix < screen_w-1 && iy < screen_h-1 && ix > 0 && iy > 0)
-                {
-                    data[ix + (iy * screen_w)] = disp::ARGB(0, 0, 255, 255);
-                }  
+                disp::Shutdown(&pWindow, &pRenderer, &pTexture);
             }
-
-            first_iter = false;
+            else if (event.type == SDL_KEYDOWN)
+            {
+                if (event.key.keysym.sym == SDLK_KP_PLUS)
+                {
+                    if ((range_upper - 1) > 0 && (range_lower + 1) < 0)
+                    {
+                        range_lower++;
+                        range_upper--;
+                        SDL_Delay(10);
+                    }
+                    else if (event.key.keysym.sym == SDLK_KP_MINUS)
+                    {
+                        range_lower--;
+                        range_upper++;
+                        SDL_Delay(10);
+                    }
+                }
+            }
         }
-        else
+
+        if (!first_iter)
         {
-            //TODO: broken
             //plot another line, quit, or clear
             std::string a;
             std::cout << R"(input "c" to clear, "q" to quit, or type another expression: )";
@@ -666,10 +655,10 @@ int main()
             if (parser::to_lower(a) == "q")
             {
                 std::cout << "quitting...";
-                running = false;
+                disp::Shutdown(&pWindow, &pRenderer, &pTexture);
             }
             else if (parser::to_lower(a) == "c")
-            {    
+            {
                 for (int jj = 0; jj < (screen_w * screen_h); jj++)
                 {
                     data[jj] = disp::ARGB(255, 255, 255, 255);
@@ -686,8 +675,8 @@ int main()
                     float tx = x / pt_step_count;
                     double ty = parser::eval_rpn(rpn, var_name, tx);
 
-                    tx *= (screen_w / range_upper);
-                    ty *= (screen_w / range_upper);
+                    tx *= (screen_w / static_cast<float>(range_upper));
+                    ty *= (screen_w / static_cast<float>(range_upper));
 
                     int ix = round(tx / 2.f);
                     int iy = round(ty / 2.f);
@@ -703,8 +692,47 @@ int main()
                 }
             }
         }
+        else
+        {
+            disp::Render(pWindow, pRenderer, pTexture, data);
+            std::string a;
+            std::cout << "x is assumed to be a variable\n";
+            std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
+            std::cout << "input: ";
+            std::getline(std::cin, a);
+            std::cout << '\n';
+            std::vector<std::string> rpn = parser::s_yard(a, "x");
+
+            //plot
+
+            const int ratio = screen_w / range_upper;
+            for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
+            {
+                float tx = x / pt_step_count;
+                double ty = parser::eval_rpn(rpn, var_name, tx);
+
+                tx *= (screen_w / static_cast<float>(range_upper));
+                ty *= (screen_w / static_cast<float>(range_upper));
+
+                int ix = round(tx / 2.f);
+                int iy = round(ty / 2.f);
+
+                ix += screen_w / 2;
+                iy += screen_h / 2;
+                //std::cout << "x:" << ix << " y:" << iy << '\n';
+
+                if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
+                {
+                    data[ix + (iy * screen_w)] = disp::ARGB(0, 0, 255, 255);
+                }
+            }
+
+            first_iter = false;
+        }
         disp::Render(pWindow, pRenderer, pTexture, data);
     }
-     //
+    
+        
+    
     return 0;
 }
