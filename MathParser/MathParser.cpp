@@ -25,8 +25,9 @@ constexpr int scale_factor = 2;
 constexpr const char* win_title = "Graphing Calc";
 constexpr int32_t g_kRenderDeviceFlags = -1;
 constexpr  int32_t g_kErrorOccurred = -1;
-constexpr int range_upper = 10;
-constexpr int range_lower = -10;
+int range_upper = 10;
+int range_lower = -10;
+constexpr float pt_step_count = 1000;
 
 //should i do using namespace std?
 
@@ -563,7 +564,7 @@ void create_canvas(uint32_t *data)
         for (int y = 0; y < screen_h; y++)
         {
             //printf("x:%d y:%d\n", x, y);
-            data[x + (y * screen_w)] = disp::ARGB(0, 120, 0, 255);
+            data[x + (y * screen_w)] = disp::ARGB(0, 0, 0, 255);
         }
     }
    
@@ -571,19 +572,19 @@ void create_canvas(uint32_t *data)
     {
         for (int y = grid_spacing; y < screen_h; y += grid_spacing)
         {
-            data[x + (y * screen_w)] = disp::ARGB(0, 120, 0, 255);
+            data[x + (y * screen_w)] = disp::ARGB(0, 0, 0, 255);
         }
     }
 
     //y axis
     for (int y = 0; y < screen_h; y++)
     {
-        data[screen_w/2 + (y * screen_w)] = disp::ARGB(137, 0, 0, 255);
+        data[screen_w/2 + (y * screen_w)] = disp::ARGB(255, 0, 0, 255);
     }
     //x axis
     for (int x = 0; x < screen_h; x++)
     {
-        data[x + (screen_h/2 * screen_w)] = disp::ARGB(137, 0, 0, 255);
+        data[x + (screen_h/2 * screen_w)] = disp::ARGB(255, 0, 0, 255);
     }
     
 }
@@ -602,6 +603,11 @@ int main()
     SDL_Texture* pTexture = nullptr;
 
     std::string var_name = "x";
+
+    for (int jj = 0; jj < (screen_w * screen_h); jj++)
+    {
+        data[jj] = disp::ARGB(255, 255, 255, 255);
+    }
 
     create_canvas(data);
 
@@ -627,9 +633,9 @@ int main()
             //plot
             int c = 0;
             const int ratio = screen_w / range_upper;
-            for (int x = range_lower*30; x < range_upper*30; x++)
+            for (int x = range_lower* pt_step_count; x < range_upper* pt_step_count; x++)
             {
-                float tx = x / 30.0f;
+                float tx = x / pt_step_count;
                 double ty = parser::eval_rpn(rpn, var_name, tx);
                 
                 tx *= (screen_w / range_upper);
@@ -655,7 +661,7 @@ int main()
             //TODO: broken
             //plot another line, quit, or clear
             std::string a;
-            std::cout << R"(input "c" to clear the graph, "q" to quit the program, or type another expression(that will be ploted on top): )";
+            std::cout << R"(input "c" to clear, "q" to quit, or type another expression: )";
             std::getline(std::cin, a);
             if (parser::to_lower(a) == "q")
             {
@@ -664,9 +670,9 @@ int main()
             }
             else if (parser::to_lower(a) == "c")
             {    
-                for (int j = 0; j < (screen_w * screen_h); j++)
+                for (int jj = 0; jj < (screen_w * screen_h); jj++)
                 {
-                    data[j] = 0;
+                    data[jj] = disp::ARGB(255, 255, 255, 255);
                 }
                 create_canvas(data);
             }
@@ -675,9 +681,9 @@ int main()
                 std::vector<std::string>rpn = parser::s_yard(a, var_name);
                 //loop
                 const int ratio = screen_w / range_upper;
-                for (int x = range_lower * 30; x < range_upper * 30; x++)
+                for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
                 {
-                    float tx = x / 30.0f;
+                    float tx = x / pt_step_count;
                     double ty = parser::eval_rpn(rpn, var_name, tx);
 
                     tx *= (screen_w / range_upper);
@@ -688,7 +694,7 @@ int main()
 
                     ix += screen_w / 2;
                     iy += screen_h / 2;
-                    std::cout << "x:" << ix << " y:" << iy << '\n';
+                    //std::cout << "x:" << ix << " y:" << iy << '\n';
 
                     if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
                     {
