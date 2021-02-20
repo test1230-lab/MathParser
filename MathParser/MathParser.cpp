@@ -279,7 +279,7 @@ namespace parser
         }
         else if (op == "^")
         {
-            return std::pow(d1, d2);
+            return std::pow(d1, d2); //TODO: FIX DOING x ^ 2 RESULTS IN CONSTANT Y VALUE
         }
         else
         {
@@ -588,19 +588,15 @@ void create_canvas(uint32_t *data)
     
 }
 
-double map_to_screen(double a)
-{
-    const int ratio = screen_w / range_upper;
-    if (a < 0)
-    {
-        return ((screen_h / 2) - a) * ratio;
-    }
-    else
-    {
-        return ((screen_h / 2) + a) * ratio;
-    }
-}
 
+std::pair<int, int> map_to_screen(double x, double y)
+{
+    constexpr int ratio = screen_w / range_upper;
+    x *= ratio;
+    y *= ratio;
+    
+
+}
 
 int main()
 {
@@ -639,29 +635,25 @@ int main()
             //plot
             int c = 0;
             const int ratio = screen_w / range_upper;
-            for (int x = range_lower*120; x < range_upper*120; x++)
+            for (int x = range_lower*30; x < range_upper*30; x++)
             {
-                float t = x / 12.0;
-                double temp = (parser::eval_rpn(rpn, var_name, t)*ratio)*scale_factor;
-                std::cout << t << '\n';
+                float tx = x / 30.0f;
+                double ty = parser::eval_rpn(rpn, var_name, tx);
                 
-                int y = round(temp);
-                //std::cout << "y:" << y << " x:" << x << '\n';
+                tx *= (screen_w / range_upper);
+                ty *= (screen_w / range_upper);
                 
-                if (y > 0 && y < screen_h && x < screen_w)
-                {
-                    data[x + (y * screen_w)] = disp::ARGB(0, 0, 255, 255);
-                }
-                //TODO: these conditions were written at 2am, revisit
-                else if (y < 0 && y > -screen_h && x < screen_w)
-                {
-                    if (y > -screen_h / 2)
-                    {
-                        y = (screen_h / 2) - (-y);
-                        data[x + (y * screen_w)] = disp::ARGB(0, 0, 255, 255);
-                    }
-                }
+                int ix = round(tx/2.f);
+                int iy = round(ty/2.f);
+                
+                ix += screen_w/2;
+                iy += screen_h/2;
+                //std::cout << "x:" << ix << " y:" << iy << '\n';
 
+                if (ix < screen_w-1 && iy < screen_h-1)
+                {
+                    data[ix + (iy * screen_w)] = disp::ARGB(0, 0, 255, 255);
+                }  
             }
 
             first_iter = false;
@@ -680,13 +672,37 @@ int main()
             }
             else if (parser::to_lower(a) == "c")
             {    
-                memset(data, 0, screen_w * screen_h);
+                memset(data, 0, (screen_w * screen_h));
+                memset(data, 0, (screen_w * screen_h));
+                memset(data, 0, (screen_w * screen_h));
+                memset(data, 0, (screen_w * screen_h));
                 create_canvas(data);
             }
             else
             {
                 std::vector<std::string>rpn = parser::s_yard(a, var_name);
                 //loop
+                const int ratio = screen_w / range_upper;
+                for (int x = range_lower * 30; x < range_upper * 30; x++)
+                {
+                    float tx = x / 30.0f;
+                    double ty = parser::eval_rpn(rpn, var_name, tx);
+
+                    tx *= (screen_w / range_upper);
+                    ty *= (screen_w / range_upper);
+
+                    int ix = round(tx / 2.f);
+                    int iy = round(ty / 2.f);
+
+                    ix += screen_w / 2;
+                    iy += screen_h / 2;
+                    std::cout << "x:" << ix << " y:" << iy << '\n';
+
+                    if (ix < screen_w-1 && iy < screen_h-1)
+                    {
+                        data[ix + (iy * screen_w)] = disp::ARGB(0, 0, 255, 255);
+                    }
+                }
             }
         }
         disp::Render(pWindow, pRenderer, pTexture, data);
