@@ -21,6 +21,7 @@ constexpr int screen_h = 640;
 constexpr int channels = 3;
 constexpr int grid_spacing = 64;
 constexpr int scale_factor = 150;
+constexpr const char* win_title = "Graphing Calc";
 
 //should i do using namespace std?
 
@@ -329,7 +330,7 @@ namespace parser
         {
             if (to_lower(tok) == "pi")
             {
-                stack.push(to_string(M_PI));
+                stack.push(to_string(PI));
             }
             else if (tok == var_name)
             {
@@ -358,10 +359,9 @@ namespace parser
             {
                 if (!stack.empty())
                 {
-                    double res = 0.0;
                     const double d1 = std::stod(stack.top());
                     stack.pop();
-                    res = compute_unary_ops(d1, tok);
+                    double res = compute_unary_ops(d1, tok);
                     stack.push(to_string(res));
                 }
             }
@@ -425,13 +425,31 @@ int map_to_screen(int a)
     }
 }
 
-//int32_t data[screen_w * screen_h * channels] = { 0 };
-//uint32_t blank[screen_w * screen_h * channels] = { 0 };
+
+uint32_t data[screen_w * screen_h * channels] = { 0 };
 
 int main()
 {
     bool quit = false;
     bool first_iter = true;
+    
+    SDL_Window* pWindow = nullptr;
+    SDL_Renderer* pRenderer = nullptr;
+    SDL_Texture* pTexture = nullptr;
+
+    void* pixels;
+    int pitch;
+    SDL_PixelFormat* fmt;
+    Uint32 format = SDL_GetWindowPixelFormat(window);
+    fmt = SDL_AllocFormat(format);
+
+    SDL_LockTexture(pTexture, NULL, &pixels, &pitch);
+
+    //do changes
+    ((Uint32*)pixels)[x + (y * SCREEN_WIDTH)] = SDL_MapRGB(fmt, 255, 0, 0);
+
+    SDL_UnlockTexture(pTexture);
+    SDL_FreeFormat(fmt);
 
     std::string var_name = "x";
 
