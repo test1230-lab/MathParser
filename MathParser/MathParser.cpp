@@ -374,16 +374,14 @@ namespace parser
     }
 }
 
-void create_canvas(uint32_t *data, int spacing)
+void create_canvas(uint32_t *data, int spacing, SDL_PixelFormat* fmt)
 {
     //create grid  
     for (int x = 0; x < screen_w/spacing; x += spacing)
     {
         for (int y = 0; y < screen_h; y++)
         {
-            data[x + y * screen_w + 0 * screen_h * screen_w] = 0;
-            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
-            data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
+            data[x + (y * screen_w)] = SDL_MapRGB(fmt, 255, 0, 0);
         }
     }
    
@@ -391,25 +389,19 @@ void create_canvas(uint32_t *data, int spacing)
     {
         for (int y = 0; y < screen_h/spacing; y += spacing)
         {
-            data[x + y * screen_w + 0 * screen_h * screen_w] = 0;
-            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
-            data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
+            data[x + (y * screen_w)] = SDL_MapRGB(fmt, 255, 0, 0);
         }
     }
     
     //y axis
     for (int y = 0; y < screen_h; y++)
     {
-        data[0 + y * screen_w + 0 * screen_h * screen_w] = 255;
-        data[0 + y * screen_w + 1 * screen_h * screen_w] = 255;
-        data[0 + y * screen_w + 2 * screen_h * screen_w] = 255;
+        data[0 + (y * screen_w)] = SDL_MapRGB(fmt, 255, 0, 0);
     }
     //x axis
     for (int x = 0; x < screen_h; x++)
     {
-        data[x + 0 * screen_w + 0 * screen_h * screen_w] = 255;
-        data[x + 0 * screen_w + 1 * screen_h * screen_w] = 255;
-        data[x + 0 * screen_w + 2 * screen_h * screen_w] = 255;
+        data[x + (0 * screen_w)] = SDL_MapRGB(fmt, 255, 0, 0);
     }
 }
 
@@ -426,41 +418,51 @@ int map_to_screen(int a)
 }
 
 
-uint32_t data[screen_w * screen_h * channels] = { 0 };
-
 int main()
 {
     bool quit = false;
     bool first_iter = true;
-    
-    SDL_Window* pWindow = nullptr;
-    SDL_Renderer* pRenderer = nullptr;
-    SDL_Texture* pTexture = nullptr;
+
+    uint32_t* data = new uint32_t[screen_w * screen_h];
+
+    SDL_Event event;
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Texture* texture = nullptr;
+
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
+        printf("SDL could not initialize SDL_Error: %s\n", SDL_GetError());
+    }
+
+    window = SDL_CreateWindow(win_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_w, screen_h, SDL_WINDOW_SHOWN);
+    if (window == NULL)
+    {
+        printf("Window could not be created SDL_Error: %s\n", SDL_GetError());
+    }
 
     void* pixels;
     int pitch;
     SDL_PixelFormat* fmt;
     Uint32 format = SDL_GetWindowPixelFormat(window);
     fmt = SDL_AllocFormat(format);
-
-    SDL_LockTexture(pTexture, NULL, &pixels, &pitch);
+    SDL_LockTexture(texture, NULL, &pixels, &pitch);
+    memcpy(pixels, data, screen_h * static_cast<size_t>(pitch));
 
     //do changes
-    ((Uint32*)pixels)[x + (y * SCREEN_WIDTH)] = SDL_MapRGB(fmt, 255, 0, 0);
+    create_canvas(data, grid_spacing, fmt);
 
-    SDL_UnlockTexture(pTexture);
+    SDL_UnlockTexture(texture);
     SDL_FreeFormat(fmt);
 
     std::string var_name = "x";
 
- 
     while (!quit)
     {
-
-        if (event.type == SDL_QUIT)
+        
+        if (quit) //change later
         {
             quit = true;
-            break;
         }
         else
         {
@@ -482,9 +484,7 @@ int main()
                     int y = round(temp);
                     y = parser::clip(map_to_screen(y), 0, screen_h);
                     //std::cout << y << '\n';
-                    data[c + y * screen_w + 0 * screen_h * screen_w] = 255;
-                    data[c + y * screen_w + 1 * screen_h * screen_w] = 0;
-                    data[c + y * screen_w + 2 * screen_h * screen_w] = 0;
+                    data[x + (y * screen_w)] = SDL_MapRGB(fmt, 255, 0, 0);
                 }
                 first_iter = false;
             }
@@ -502,6 +502,12 @@ int main()
                 else if (parser::to_lower(a) == "c")
                 {
                     //reset graph
+                    SDL_PixelFormat* fmt;
+                    Uint32 format = SDL_GetWindowPixelFormat(window);
+                    fmt = SDL_AllocFormat(format);
+                    SDL_RenderClear(renderer);
+                    create_canvas(data, grid_spacing, fmt);
+                    SDL_FreeFormat(fmt);
                 }
                 else
                 {
@@ -510,15 +516,20 @@ int main()
                     {
                         double temp = scale_factor * parser::eval_rpn(rpn, var_name, x);
                         int y = round(temp);
-                        y = parser::clip(map_to_screen(y),0, screen_h);
-                        data[x + y * screen_w + 0 * screen_h * screen_w] = 255;
-                        data[x + y * screen_w + 1 * screen_h * screen_w] = 0;
-                        data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
+                        y = parser::clip(map_to_screen(y), 0, screen_h);
+                        data[x + (y * screen_w)] = SDL_MapRGB(fmt, 255, 0, 0);
                     }
                 }
             }
 
-            SDL_RenderClear(renderer);
+            //apply changes
+            void* pixels;
+            int pitch;
+            fmt = SDL_AllocFormat(format);
+            SDL_LockTexture(texture, NULL, &pixels, &pitch);
+            memcpy(pixels, data, screen_h * static_cast<size_t>(pitch));
+            SDL_UnlockTexture(texture);
+            SDL_FreeFormat(fmt);
             SDL_RenderCopy(renderer, texture, NULL, NULL);
             SDL_RenderPresent(renderer);
         }
