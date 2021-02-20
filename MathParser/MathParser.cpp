@@ -642,7 +642,7 @@ int main()
                 iy += screen_h/2;
                 //std::cout << "x:" << ix << " y:" << iy << '\n';
 
-                if (ix < screen_w-1 && iy < screen_h-1)
+                if (ix < screen_w-1 && iy < screen_h-1 && ix > 0 && iy > 0)
                 {
                     data[ix + (iy * screen_w)] = disp::ARGB(0, 0, 255, 255);
                 }  
@@ -690,7 +690,7 @@ int main()
                     iy += screen_h / 2;
                     std::cout << "x:" << ix << " y:" << iy << '\n';
 
-                    if (ix < screen_w-1 && iy < screen_h-1)
+                    if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
                     {
                         data[ix + (iy * screen_w)] = disp::ARGB(0, 0, 255, 255);
                     }
