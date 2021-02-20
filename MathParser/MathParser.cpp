@@ -12,6 +12,7 @@
 #include <cmath>
 #include <SDL.h>
 #include <SDL_image.h>
+#include <SDL_ttf.h>
 #undef main
 
 
@@ -22,8 +23,6 @@ constexpr int screen_h = 640;
 constexpr int channels = 3;
 constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
-constexpr int32_t g_kRenderDeviceFlags = -1;
-constexpr  int32_t g_kErrorOccurred = -1;
 int range_upper = 10;
 int range_lower = -10;
 constexpr float pt_step_count = 320;
@@ -371,6 +370,9 @@ namespace parser
 
 namespace disp
 {
+    constexpr int32_t g_kRenderDeviceFlags = -1;
+    constexpr  int32_t g_kErrorOccurred = -1;
+
     int32_t e(int32_t result, std::string errorMessage)
     {
         if (result)
@@ -585,8 +587,7 @@ void create_canvas(uint32_t *data)
     for (int x = 0; x < screen_h; x++)
     {
         data[x + (screen_h/2 * screen_w)] = disp::ARGB(255, 0, 0, 255);
-    }
-    
+    }   
 }
 
 
@@ -609,6 +610,7 @@ int main()
     {
         data[jj] = disp::ARGB(255, 255, 255, 255);
     }
+
 
     create_canvas(data);
 
