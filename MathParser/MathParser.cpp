@@ -589,14 +589,6 @@ void create_canvas(uint32_t *data)
 }
 
 
-std::pair<int, int> map_to_screen(double x, double y)
-{
-    constexpr int ratio = screen_w / range_upper;
-    x *= ratio;
-    y *= ratio;
-    
-
-}
 
 int main()
 {
@@ -672,10 +664,10 @@ int main()
             }
             else if (parser::to_lower(a) == "c")
             {    
-                memset(data, 0, (screen_w * screen_h));
-                memset(data, 0, (screen_w * screen_h));
-                memset(data, 0, (screen_w * screen_h));
-                memset(data, 0, (screen_w * screen_h));
+                for (int j = 0; j < (screen_w * screen_h); j++)
+                {
+                    data[j] = 0;
+                }
                 create_canvas(data);
             }
             else
