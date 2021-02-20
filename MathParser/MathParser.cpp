@@ -21,10 +21,12 @@ constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int channels = 3;
 constexpr int grid_spacing = 32;
-constexpr int scale_factor = 0.1;
+constexpr int scale_factor = 2;
 constexpr const char* win_title = "Graphing Calc";
 constexpr int32_t g_kRenderDeviceFlags = -1;
 constexpr  int32_t g_kErrorOccurred = -1;
+constexpr int range_upper = 10;
+constexpr int range_lower = -10;
 
 //should i do using namespace std?
 
@@ -586,15 +588,16 @@ void create_canvas(uint32_t *data)
     
 }
 
-int map_to_screen(int a)
+double map_to_screen(double a)
 {
+    const int ratio = screen_w / range_upper;
     if (a < 0)
     {
-        return (screen_h / 2) - a;
+        return ((screen_h / 2) - a) * ratio;
     }
     else
     {
-        return (screen_h / 2) + a;
+        return ((screen_h / 2) + a) * ratio;
     }
 }
 
@@ -635,24 +638,37 @@ int main()
 
             //plot
             int c = 0;
-            for (int x = -screen_w / 2; x < screen_w / 2; x++)
+            const int ratio = screen_w / range_upper;
+            for (int x = range_lower*120; x < range_upper*120; x++)
             {
-                float t = screen_w / 2.f * x / 10;
-                double temp = scale_factor * parser::eval_rpn(rpn, var_name, x);
+                float t = x / 12.0;
+                double temp = (parser::eval_rpn(rpn, var_name, t)*ratio)*scale_factor;
                 std::cout << t << '\n';
+                
                 int y = round(temp);
                 //std::cout << "y:" << y << " x:" << x << '\n';
-                y = std::max(map_to_screen(y), screen_h);
                 
-                if (y > 0)
+                if (y > 0 && y < screen_h && x < screen_w)
                 {
                     data[x + (y * screen_w)] = disp::ARGB(0, 0, 255, 255);
                 }
+                //TODO: these conditions were written at 2am, revisit
+                else if (y < 0 && y > -screen_h && x < screen_w)
+                {
+                    if (y > -screen_h / 2)
+                    {
+                        y = (screen_h / 2) - (-y);
+                        data[x + (y * screen_w)] = disp::ARGB(0, 0, 255, 255);
+                    }
+                }
+
             }
+
             first_iter = false;
         }
         else
         {
+            //TODO: broken
             //plot another line, quit, or clear
             std::string a;
             std::cout << R"(input "c" to clear the graph, "q" to quit the program, or type another expression(that will be ploted on top): )";
@@ -670,17 +686,7 @@ int main()
             else
             {
                 std::vector<std::string>rpn = parser::s_yard(a, var_name);
-                for (int x = -screen_w / 2; x < screen_w / 2; x++)
-                {
-                    double temp = scale_factor * parser::eval_rpn(rpn, var_name, x);
-                    int y = round(temp);
-                    y = std::max(map_to_screen(y), screen_h);
-                    if (y > 0)
-                    {
-                        data[x + (y * screen_w)] = disp::ARGB(0, 0, 255, 255);
-                    }
-                    
-                }
+                //loop
             }
         }
         disp::Render(pWindow, pRenderer, pTexture, data);
