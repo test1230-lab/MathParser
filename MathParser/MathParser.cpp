@@ -374,15 +374,15 @@ namespace parser
     }
 }
 
-void create_canvas(uint8_t *data, int spacing)
+void create_canvas(uint32_t *data, int spacing)
 {
     for (int x = 0; x < screen_w/spacing; x += spacing)
     {
         for (int y = 0; y < screen_h; y++)
         {
-            data[x + y * screen_w + 0 * screen_h * screen_w] = 0;
-            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
-            data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
+            data[x + y * screen_w + 0 * screen_h * screen_w] = 0xFFFF0000;
+            data[x + y * screen_w + 1 * screen_h * screen_w] = 0xFFFF0000;
+            data[x + y * screen_w + 2 * screen_h * screen_w] = 0xFFFF0000;
         }
     }
    
@@ -390,25 +390,25 @@ void create_canvas(uint8_t *data, int spacing)
     {
         for (int y = 0; y < screen_h/spacing; y += spacing)
         {
-            data[x + y * screen_w + 0 * screen_h * screen_w] = 0;
-            data[x + y * screen_w + 1 * screen_h * screen_w] = 255;
-            data[x + y * screen_w + 2 * screen_h * screen_w] = 0;
+            data[x + y * screen_w + 0 * screen_h * screen_w] = 0xFFFF0000;
+            data[x + y * screen_w + 1 * screen_h * screen_w] = 0xFFFF0000;
+            data[x + y * screen_w + 2 * screen_h * screen_w] = 0xFFFF0000;
         }
     }
     
-    //y axis
+    //axises green
     for (int y = 0; y < screen_h; y++)
     {
-        data[0 + y * screen_w + 0 * screen_h * screen_w] = 255;
-        data[0 + y * screen_w + 1 * screen_h * screen_w] = 255;
-        data[0 + y * screen_w + 2 * screen_h * screen_w] = 255;
+        data[0 + y * screen_w + 0 * screen_h * screen_w] = 0x00000000;
+        data[0 + y * screen_w + 1 * screen_h * screen_w] = 0xFFFF0000;
+        data[0 + y * screen_w + 2 * screen_h * screen_w] = 0x00000000;
     }
     //x axis
     for (int x = 0; x < screen_h; x++)
     {
-        data[0 + y * screen_w + 0 * screen_h * screen_w] = 255;
-        data[0 + y * screen_w + 1 * screen_h * screen_w] = 255;
-        data[0 + y * screen_w + 2 * screen_h * screen_w] = 255;
+        data[x + 0 * screen_w + 0 * screen_h * screen_w] = 0x00000000;
+        data[x + 0 * screen_w + 1 * screen_h * screen_w] = 0xFFFF0000;
+        data[x + 0 * screen_w + 2 * screen_h * screen_w] = 0x00000000;
     }
 }
 
@@ -424,8 +424,8 @@ int map_to_screen(int a)
     }
 }
 
-uint8_t data[screen_w * screen_h * channels] = { 0 };
-uint8_t blank[screen_w * screen_h * channels] = { 0 };
+uint32_t data[screen_w * screen_h * channels] = { 0 };
+uint32_t blank[screen_w * screen_h * channels] = { 0 };
 
 int main()
 {
@@ -442,25 +442,28 @@ int main()
     SDL_Renderer* renderer = NULL;
     SDL_Texture* tex = NULL;
 
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
     tex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, screen_w, screen_h);
 
     //uint32_t* data = new uint32_t[screen_w * screen_h * channels];
     //uint32_t* blank = new uint32_t[screen_w * screen_h * channels];
 
-    int pitch = screen_w;
     //setup canvas
     create_canvas(data, grid_spacing);
     create_canvas(blank, grid_spacing);
 
-    SDL_LockTexture(tex,
-        NULL,      // NULL means the *whole texture* here.
-        (void**)data,
-        &pitch);
+    int pitch;
+    void* tex_pixels;
+    SDL_LockTexture(tex, nullptr, &tex_pixels, &pitch);
+    std::cout << pitch << '\n';
+    memcpy(tex_pixels, data, static_cast<size_t>(pitch));
+    SDL_UnlockTexture(tex);
 
     //draw image data
     SDL_UpdateTexture(tex, NULL, data, sizeof(data));
-
-    SDL_UnlockTexture(tex);
+    SDL_RenderCopy(renderer, tex, NULL, NULL);
+    SDL_RenderPresent(renderer);
 
     while (!quit)
     {
