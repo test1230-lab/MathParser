@@ -707,6 +707,6 @@ int main()
         }
         disp::Render(pWindow, pRenderer, pTexture, data);
     }
-     
+     //
     return 0;
 }
