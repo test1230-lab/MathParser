@@ -17,17 +17,24 @@
 
 
 //constexpr double PI = 3.141592741012573242;
+constexpr bool dark_mode = true;
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
+constexpr uint32_t green = 0xFF007F00;
+constexpr uint32_t red = 0xFFBB0000;
+constexpr uint32_t yellow = 0xFFFFFF00;
+constexpr uint32_t b_red = 0xFFFF0000;
+constexpr uint32_t blue = 0xFF0000FF;
+
 constexpr double PI = 3.14159274;
 constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int channels = 3;
 constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
-int range_upper = 10;
-int range_lower = -10;
-constexpr float pt_step_count = 320;
+int range_upper = 5;
+int range_lower = -5;
+constexpr float pt_step_count = 640;
 
 //should i do using namespace std?
 
@@ -77,7 +84,7 @@ namespace parser
         {
             return true;
         }
-        else if (str == "atan" || str == "cosh" || str == "sinh")
+        else if (str == "atan" || str == "cosh" || str == "sinh" || str == "cos")
         {
             return true;
         }
@@ -292,6 +299,7 @@ namespace parser
     double compute_unary_ops(double d, const std::string op)
     {
         if (op == "sin") return sin(d);
+        else if (op == "cos") return cos(d);
         else if (op == "sqrt") return sqrt(d);
         else if (op == "abs") return abs(d);
         else if (op == "tan") return tan(d);
@@ -319,6 +327,7 @@ namespace parser
         }
     }
 
+    //TODO: negative broken
     double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
     {     
         std::stack<std::string> stack;
@@ -562,13 +571,21 @@ namespace disp
 
 void create_canvas(uint32_t *data)
 {
+    uint32_t color0 = black;
+    uint32_t color1 = b_red;
+    if (dark_mode)
+    {
+        color0 = green;
+        color1 = red;
+    }
+
     //create grid  
     for (int x = grid_spacing; x < screen_w; x += grid_spacing)
     {
         for (int y = 0; y < screen_h; y++)
         {
             //printf("x:%d y:%d\n", x, y);
-            data[x + (y * screen_w)] = disp::ARGB(0, 0, 0, 255);
+            data[x + (y * screen_w)] = color0;
         }
     }
    
@@ -576,23 +593,31 @@ void create_canvas(uint32_t *data)
     {
         for (int y = grid_spacing; y < screen_h; y += grid_spacing)
         {
-            data[x + (y * screen_w)] = disp::ARGB(0, 0, 0, 255);
+            data[x + (y * screen_w)] = color0;
         }
     }
 
     //y axis
     for (int y = 0; y < screen_h; y++)
     {
-        data[screen_w/2 + (y * screen_w)] = disp::ARGB(255, 0, 0, 255);
+        data[screen_w/2 + (y * screen_w)] = color1;
     }
     //x axis
     for (int x = 0; x < screen_h; x++)
     {
-        data[x + (screen_h/2 * screen_w)] = disp::ARGB(255, 0, 0, 255);
+        data[x + (screen_h/2 * screen_w)] = color1;
     }   
 }
 
-
+void display_font(std::string str, TTF_Font* font, SDL_Color color, SDL_Rect txt_rect, SDL_Renderer* pRenderer)
+{
+    const char* c_str = str.c_str();
+    SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, c_str, color);
+    SDL_Texture* Message = SDL_CreateTextureFromSurface(pRenderer, surfaceMessage);
+    SDL_RenderCopy(pRenderer, Message, NULL, &txt_rect);
+    SDL_FreeSurface(surfaceMessage);
+    SDL_DestroyTexture(Message);
+}
 
 int main()
 {
@@ -605,12 +630,27 @@ int main()
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
+    const SDL_Rect* dstrect = nullptr;
+    SDL_Rect message_rect; //create a rect
+    message_rect.x = 0;  //controls the rect's x coordinate 
+    message_rect.y = 0; // controls the rect's y coordinte
+    message_rect.w = 100; // controls the width of the rect
+    message_rect.h = 100; // controls the height of the rect
 
+    SDL_Color color = { 0, 0, 0, 0xFF };
+
+    std::string in_txt = "x";
     std::string var_name = "x";
 
-    for (int jj = 0; jj < (screen_w * screen_h); jj++)
+    TTF_Init();
+    TTF_Font* font = TTF_OpenFont("cour.ttf" /*path*/, 15 /*size*/);
+    
+    if (!dark_mode)
     {
-        data[jj] = disp::ARGB(255, 255, 255, 255);
+        for (int jj = 0; jj < (screen_w * screen_h); jj++)
+        {
+            data[jj] = white;
+        }
     }
 
     create_canvas(data);
@@ -621,12 +661,13 @@ int main()
         return -1;
     }
 
+    SDL_StartTextInput();
+    disp::Render(pWindow, pRenderer, pTexture, data);
 
-
-    for (;;)
+    while (true)
     {
-        while (SDL_PollEvent(&event))
-        {
+        while (SDL_WaitEvent(&event))
+        {      
             if (event.type == SDL_QUIT)
             {
                 disp::Shutdown(&pWindow, &pRenderer, &pTexture);
@@ -641,50 +682,85 @@ int main()
                         range_upper--;
                         SDL_Delay(10);
                     }
-                    else if (event.key.keysym.sym == SDLK_KP_MINUS)
+                }
+                else if (event.key.keysym.sym == SDLK_KP_MINUS)
+                {
+                    range_lower--;
+                    range_upper++;
+                    SDL_Delay(10);
+                }
+                else if (event.key.keysym.sym == SDLK_BACKSPACE && in_txt.length() > 0)
+                {
+                    in_txt.pop_back();
+                    display_font(in_txt, font, color, message_rect, pRenderer);
+                }
+                else if (event.key.keysym.sym == SDLK_c && SDL_GetModState() & KMOD_CTRL)
+                {
+                    SDL_SetClipboardText(in_txt.c_str());
+                }
+                else if (event.key.keysym.sym == SDLK_v && SDL_GetModState() & KMOD_CTRL)
+                {
+                    in_txt = SDL_GetClipboardText();
+                    display_font(in_txt, font, color, message_rect, pRenderer);
+                }
+                else if (event.type == SDL_TEXTINPUT)
+                {
+                    //Not copy or pasting
+                    if (!(SDL_GetModState() & KMOD_CTRL && (event.text.text[0] == 'c' || event.text.text[0] == 'C' || event.text.text[0] == 'v' || event.text.text[0] == 'V')))
                     {
-                        range_lower--;
-                        range_upper++;
-                        SDL_Delay(10);
+                        //Append character
+                        in_txt += event.text.text;
+                        std::cout << in_txt << '\n';
+                        display_font(in_txt, font, color, message_rect, pRenderer);
                     }
                 }
             }
         }
-
         if (!first_iter)
         {
             //plot another line, quit, or clear
-            std::string a;
-            std::cout << R"(input "c" to clear, "q" to quit, or type another expression: )";
-            std::getline(std::cin, a);
-            if (parser::to_lower(a) == "q")
+            //std::string a;
+            //std::cout << R"(input "c" to clear, "q" to quit, or type another expression: )";
+            //std::getline(std::cin, a);
+            if (parser::to_lower(in_txt) == "q")
             {
                 std::cout << "quitting...";
                 disp::Shutdown(&pWindow, &pRenderer, &pTexture);
             }
-            else if (parser::to_lower(a) == "c")
+            else if (parser::to_lower(in_txt) == "c")
             {
+                uint32_t clear_color = white;
+                if (dark_mode)
+                {
+                    uint32_t clear_color = black;
+                }
                 for (int jj = 0; jj < (screen_w * screen_h); jj++)
                 {
-                    data[jj] = disp::ARGB(255, 255, 255, 255);
+                    data[jj] = clear_color;
                 }
                 create_canvas(data);
             }
             else
             {
-                std::vector<std::string>rpn = parser::s_yard(a, var_name);
+                std::vector<std::string>rpn = parser::s_yard(in_txt, var_name);
                 //loop
+                uint32_t line_color = blue;
+                if (dark_mode)
+                {
+                    uint32_t line_color = yellow;
+                }
+
                 const int ratio = screen_w / range_upper;
                 for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
                 {
-                    float tx = x / pt_step_count;
+                    double tx = x / pt_step_count;
                     double ty = parser::eval_rpn(rpn, var_name, tx);
 
-                    tx *= (screen_w / static_cast<float>(range_upper));
-                    ty *= (screen_w / static_cast<float>(range_upper));
+                    tx *= (screen_w / static_cast<double>(range_upper));
+                    ty *= (screen_w / static_cast<double>(range_upper));
 
-                    int ix = round(tx / 2.f);
-                    int iy = round(ty / 2.f);
+                    int ix = round(tx / 2.0);
+                    int iy = round(ty / 2.0);
 
                     ix += screen_w / 2;
                     iy += screen_h / 2;
@@ -692,7 +768,7 @@ int main()
 
                     if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
                     {
-                        data[ix + (iy * screen_w)] = disp::ARGB(0, 0, 255, 255);
+                        data[ix + (iy * screen_w)] = line_color;
                     }
                 }
             }
@@ -700,27 +776,31 @@ int main()
         else
         {
             disp::Render(pWindow, pRenderer, pTexture, data);
-            std::string a;
-            std::cout << "x is assumed to be a variable\n";
-            std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
-            std::cout << "input: ";
-            std::getline(std::cin, a);
-            std::cout << '\n';
-            std::vector<std::string> rpn = parser::s_yard(a, "x");
+            //std::string a;
+            //std::cout << "x is assumed to be a variable\n";
+            //std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
+            //std::cout << "input: ";
+            //std::getline(std::cin, a);
+            //std::cout << '\n';
+            std::vector<std::string> rpn = parser::s_yard(in_txt, "x");
 
             //plot
-
+            uint32_t line_color = blue;
+            if (dark_mode)
+            {
+                uint32_t line_color = yellow;
+            }
             const int ratio = screen_w / range_upper;
             for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
             {
-                float tx = x / pt_step_count;
+                double tx = x / pt_step_count;
                 double ty = parser::eval_rpn(rpn, var_name, tx);
 
-                tx *= (screen_w / static_cast<float>(range_upper));
-                ty *= (screen_w / static_cast<float>(range_upper));
+                tx *= (screen_w / static_cast<double>(range_upper));
+                ty *= (screen_w / static_cast<double>(range_upper));
 
-                int ix = round(tx / 2.f);
-                int iy = round(ty / 2.f);
+                int ix = round(tx / 2.0);
+                int iy = round(ty / 2.0);
 
                 ix += screen_w / 2;
                 iy += screen_h / 2;
@@ -728,16 +808,12 @@ int main()
 
                 if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
                 {
-                    data[ix + (iy * screen_w)] = disp::ARGB(0, 0, 255, 255);
+                    data[ix + (iy * screen_w)] = line_color;
                 }
             }
-
             first_iter = false;
         }
         disp::Render(pWindow, pRenderer, pTexture, data);
-    }
-    
-        
-    
+    }   
     return 0;
 }
