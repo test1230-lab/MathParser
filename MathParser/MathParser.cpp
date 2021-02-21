@@ -15,7 +15,6 @@
 #include <SDL_ttf.h>
 #undef main
 
-
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
 constexpr uint32_t green = 0xFF007F00;
@@ -32,7 +31,7 @@ constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
 int range_upper = 5;
 int range_lower = -5;
-constexpr float pt_step_count = 640;
+constexpr float pt_step_count = 720;
 
 //should i do using namespace std?
 
@@ -564,18 +563,13 @@ namespace disp
 
 void create_canvas(uint32_t *data)
 {
-
-    uint32_t color0 = green;
-    uint32_t color1 = red;
-
-
     //create grid  
     for (int x = grid_spacing; x < screen_w; x += grid_spacing)
     {
         for (int y = 0; y < screen_h; y++)
         {
             //printf("x:%d y:%d\n", x, y);
-            data[x + (y * screen_w)] = color0;
+            data[x + (y * screen_w)] = green;
         }
     }
    
@@ -583,19 +577,19 @@ void create_canvas(uint32_t *data)
     {
         for (int y = grid_spacing; y < screen_h; y += grid_spacing)
         {
-            data[x + (y * screen_w)] = color0;
+            data[x + (y * screen_w)] = green;
         }
     }
 
     //y axis
     for (int y = 0; y < screen_h; y++)
     {
-        data[screen_w/2 + (y * screen_w)] = color1;
+        data[screen_w/2 + (y * screen_w)] = red;
     }
     //x axis
     for (int x = 0; x < screen_h; x++)
     {
-        data[x + (screen_h/2 * screen_w)] = color1;
+        data[x + (screen_h/2 * screen_w)] = red;
     }   
 }
 
@@ -639,7 +633,10 @@ int main()
                 else if (e.type == SDL_TEXTINPUT) 
                 {
                     in_txt.append(e.text.text);
-                    std::cout << in_txt << '\r';
+                    if (in_txt != "-" && in_txt != "+")
+                    {
+                        std::cout << in_txt << '\r';
+                    }               
                 }
                 else if (e.type == SDL_KEYDOWN) 
                 {
@@ -668,7 +665,10 @@ int main()
                 {
                     if (e.key.keysym.sym == SDLK_RETURN)
                      {
-                        std::cout << '\n';
+                        if (in_txt != "-" && in_txt != "+")
+                        {
+                            std::cout << '\n';
+                        }
                         break;
                     }
                 }
@@ -683,6 +683,7 @@ int main()
                 data[jj] = black;
             }
             create_canvas(data);
+            disp::Render(pWindow, pRenderer, pTexture, data);
             SDL_Delay(50);
             goto a;
         }
@@ -724,6 +725,7 @@ int main()
             }
             create_canvas(data);
             disp::Render(pWindow, pRenderer, pTexture, data);
+            std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
             goto a;
         }
@@ -761,16 +763,13 @@ int main()
             }
             create_canvas(data);
             disp::Render(pWindow, pRenderer, pTexture, data);
-            SDL_Delay(1);
+            std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
+            SDL_Delay(50);
             goto a;
         }
         last_txt = in_txt;
         if (!first_iter)
         {
-            for (int jj = 0; jj < (screen_w * screen_h); jj++)
-            {
-                data[jj] = black;
-            }
             std::vector<std::string>rpn = parser::s_yard(in_txt, var_name);
             //loop
             const int ratio = screen_w / range_upper;
