@@ -17,6 +17,8 @@
 
 
 //constexpr double PI = 3.141592741012573242;
+constexpr uint32_t white = 0xFFFFFFFF;
+constexpr uint32_t black = 0x00000000;
 constexpr double PI = 3.14159274;
 constexpr int screen_w = 640;
 constexpr int screen_h = 640;
@@ -611,7 +613,6 @@ int main()
         data[jj] = disp::ARGB(255, 255, 255, 255);
     }
 
-
     create_canvas(data);
 
     if (disp::e(disp::Startup(&pWindow, &pRenderer, &pTexture), "Startup Failed. Aborting...\n"))
@@ -619,6 +620,8 @@ int main()
         disp::Shutdown(&pWindow, &pRenderer, &pTexture);
         return -1;
     }
+
+
 
     for (;;)
     {
