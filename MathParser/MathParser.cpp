@@ -16,7 +16,6 @@
 #undef main
 
 
-//constexpr double PI = 3.141592741012573242;
 constexpr bool dark_mode = true;
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
@@ -392,11 +391,6 @@ namespace disp
         return result;
     }
 
-    inline uint32_t ARGB(uint32_t red, uint32_t green, uint32_t blue, uint32_t alpha)
-    {
-        return (alpha << 24) | (red << 16) | (green << 8) | blue;
-    }
-
     SDL_Window* CreateCenteredWindow(uint32_t width, uint32_t height, std::string title)
     {
         // Get current device's Display Mode to calculate window position
@@ -609,15 +603,29 @@ void create_canvas(uint32_t *data)
     }   
 }
 
-void display_font(std::string str, TTF_Font* font, SDL_Color color, SDL_Rect txt_rect, SDL_Renderer* pRenderer)
-{
-    const char* c_str = str.c_str();
-    SDL_Surface* surfaceMessage = TTF_RenderText_Solid(font, c_str, color);
-    SDL_Texture* Message = SDL_CreateTextureFromSurface(pRenderer, surfaceMessage);
-    SDL_RenderCopy(pRenderer, Message, NULL, &txt_rect);
-    SDL_FreeSurface(surfaceMessage);
-    SDL_DestroyTexture(Message);
+/*
+- x, y: upper left corner.
+- texture, rect: outputs.
+*/
+void get_text_and_rect(SDL_Renderer* renderer, int x, int y, char* text,
+    TTF_Font* font, SDL_Texture** texture, SDL_Rect* rect) {
+    int text_width;
+    int text_height;
+    SDL_Surface* surface;
+    SDL_Color textColor = { 255, 255, 255, 0 };
+
+    surface = TTF_RenderText_Solid(font, text, textColor);
+    *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    text_width = surface->w;
+    text_height = surface->h;
+    SDL_FreeSurface(surface);
+    rect->x = x;
+    rect->y = y;
+    rect->w = text_width;
+    rect->h = text_height;
 }
+
+
 
 int main()
 {
@@ -625,7 +633,7 @@ int main()
     bool first_iter = true;
 
     uint32_t* data = new uint32_t[screen_w * screen_h];
-
+    SDL_Rect rect1;
     SDL_Event event;
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
@@ -665,7 +673,7 @@ int main()
     disp::Render(pWindow, pRenderer, pTexture, data);
 
     while (true)
-    {
+    {        
         while (SDL_WaitEvent(&event))
         {      
             if (event.type == SDL_QUIT)
@@ -674,7 +682,8 @@ int main()
             }
             else if (event.type == SDL_KEYDOWN)
             {
-                if (event.key.keysym.sym == SDLK_KP_PLUS)
+                std::cout << event.key.keysym.sym << '\n';
+                if (event.key.keysym.sym == 61)
                 {
                     if ((range_upper - 1) > 0 && (range_lower + 1) < 0)
                     {
@@ -683,16 +692,22 @@ int main()
                         SDL_Delay(10);
                     }
                 }
-                else if (event.key.keysym.sym == SDLK_KP_MINUS)
+                else if (event.key.keysym.sym == 45)
                 {
                     range_lower--;
                     range_upper++;
                     SDL_Delay(10);
                 }
+                else if (event.key.keysym.sym == 13)
+                {
+                    std::cout << "enter pressed\n";
+                    goto a;
+                }
                 else if (event.key.keysym.sym == SDLK_BACKSPACE && in_txt.length() > 0)
                 {
                     in_txt.pop_back();
-                    display_font(in_txt, font, color, message_rect, pRenderer);
+                    get_text_and_rect(pRenderer, 0, 0, (char*)in_txt.c_str(), font, &pTexture, &rect1);
+                    SDL_RenderCopy(pRenderer, pTexture, NULL, &rect1);
                 }
                 else if (event.key.keysym.sym == SDLK_c && SDL_GetModState() & KMOD_CTRL)
                 {
@@ -701,7 +716,8 @@ int main()
                 else if (event.key.keysym.sym == SDLK_v && SDL_GetModState() & KMOD_CTRL)
                 {
                     in_txt = SDL_GetClipboardText();
-                    display_font(in_txt, font, color, message_rect, pRenderer);
+                    get_text_and_rect(pRenderer, 0, 0, (char*)in_txt.c_str(), font, &pTexture, &rect1);
+                    SDL_RenderCopy(pRenderer, pTexture, NULL, &rect1);
                 }
                 else if (event.type == SDL_TEXTINPUT)
                 {
@@ -711,45 +727,87 @@ int main()
                         //Append character
                         in_txt += event.text.text;
                         std::cout << in_txt << '\n';
-                        display_font(in_txt, font, color, message_rect, pRenderer);
+                        get_text_and_rect(pRenderer, 0, 0, (char*)in_txt.c_str(), font, &pTexture, &rect1);
+                        SDL_RenderCopy(pRenderer, pTexture, NULL, &rect1);
                     }
                 }
             }
         }
-        if (!first_iter)
-        {
-            //plot another line, quit, or clear
-            //std::string a;
-            //std::cout << R"(input "c" to clear, "q" to quit, or type another expression: )";
-            //std::getline(std::cin, a);
-            if (parser::to_lower(in_txt) == "q")
+        a:
+            if (!first_iter)
             {
-                std::cout << "quitting...";
-                disp::Shutdown(&pWindow, &pRenderer, &pTexture);
-            }
-            else if (parser::to_lower(in_txt) == "c")
-            {
-                uint32_t clear_color = white;
-                if (dark_mode)
+                //plot another line, quit, or clear
+                //std::string a;
+                //std::cout << R"(input "c" to clear, "q" to quit, or type another expression: )";
+                //std::getline(std::cin, a);
+                if (parser::to_lower(in_txt) == "q")
                 {
-                    uint32_t clear_color = black;
+                    std::cout << "quitting...";
+                    disp::Shutdown(&pWindow, &pRenderer, &pTexture);
                 }
-                for (int jj = 0; jj < (screen_w * screen_h); jj++)
+                else if (parser::to_lower(in_txt) == "c")
                 {
-                    data[jj] = clear_color;
+                    uint32_t clear_color = white;
+                    if (dark_mode)
+                    {
+                        uint32_t clear_color = black;
+                    }
+                    for (int jj = 0; jj < (screen_w * screen_h); jj++)
+                    {
+                        data[jj] = clear_color;
+                    }
+                    create_canvas(data);
                 }
-                create_canvas(data);
+                else
+                {
+                    std::vector<std::string>rpn = parser::s_yard(in_txt, var_name);
+                    //loop
+                    uint32_t line_color = blue;
+                    if (dark_mode)
+                    {
+                        uint32_t line_color = yellow;
+                    }
+
+                    const int ratio = screen_w / range_upper;
+                    for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
+                    {
+                        double tx = x / pt_step_count;
+                        double ty = parser::eval_rpn(rpn, var_name, tx);
+
+                        tx *= (screen_w / static_cast<double>(range_upper));
+                        ty *= (screen_w / static_cast<double>(range_upper));
+
+                        int ix = round(tx / 2.0);
+                        int iy = round(ty / 2.0);
+
+                        ix += screen_w / 2;
+                        iy += screen_h / 2;
+                        //std::cout << "x:" << ix << " y:" << iy << '\n';
+
+                        if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
+                        {
+                            data[ix + (iy * screen_w)] = line_color;
+                        }
+                    }
+                }
             }
             else
             {
-                std::vector<std::string>rpn = parser::s_yard(in_txt, var_name);
-                //loop
+                disp::Render(pWindow, pRenderer, pTexture, data);
+                //std::string a;
+                //std::cout << "x is assumed to be a variable\n";
+                //std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
+                //std::cout << "input: ";
+                //std::getline(std::cin, a);
+                //std::cout << '\n';
+                std::vector<std::string> rpn = parser::s_yard(in_txt, "x");
+
+                //plot
                 uint32_t line_color = blue;
                 if (dark_mode)
                 {
                     uint32_t line_color = yellow;
                 }
-
                 const int ratio = screen_w / range_upper;
                 for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
                 {
@@ -771,49 +829,9 @@ int main()
                         data[ix + (iy * screen_w)] = line_color;
                     }
                 }
+                first_iter = false;
             }
-        }
-        else
-        {
             disp::Render(pWindow, pRenderer, pTexture, data);
-            //std::string a;
-            //std::cout << "x is assumed to be a variable\n";
-            //std::cout << "make sure to have spaces between every number or operator/parenthese\n\n";
-            //std::cout << "input: ";
-            //std::getline(std::cin, a);
-            //std::cout << '\n';
-            std::vector<std::string> rpn = parser::s_yard(in_txt, "x");
-
-            //plot
-            uint32_t line_color = blue;
-            if (dark_mode)
-            {
-                uint32_t line_color = yellow;
-            }
-            const int ratio = screen_w / range_upper;
-            for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
-            {
-                double tx = x / pt_step_count;
-                double ty = parser::eval_rpn(rpn, var_name, tx);
-
-                tx *= (screen_w / static_cast<double>(range_upper));
-                ty *= (screen_w / static_cast<double>(range_upper));
-
-                int ix = round(tx / 2.0);
-                int iy = round(ty / 2.0);
-
-                ix += screen_w / 2;
-                iy += screen_h / 2;
-                //std::cout << "x:" << ix << " y:" << iy << '\n';
-
-                if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
-                {
-                    data[ix + (iy * screen_w)] = line_color;
-                }
-            }
-            first_iter = false;
-        }
-        disp::Render(pWindow, pRenderer, pTexture, data);
     }   
     return 0;
 }
