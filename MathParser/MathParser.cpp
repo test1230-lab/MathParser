@@ -12,7 +12,6 @@
 #include <cmath>
 #include <SDL.h>
 #include <SDL_image.h>
-#include <SDL_ttf.h>
 #undef main
 
 constexpr uint32_t white = 0xFFFFFFFF;
@@ -593,6 +592,29 @@ void create_canvas(uint32_t *data)
     }   
 }
 
+void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::string>& rpn, std::string var_name)
+{
+    const int ratio = screen_w / range_upper;
+    for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
+    {
+        double tx = x / pt_step_count;
+        double ty = parser::eval_rpn(rpn, var_name, tx);
+
+        tx *= (screen_w / static_cast<double>(range_upper));
+        ty *= (screen_w / static_cast<double>(range_upper));
+
+        int ix = round(tx / 2.0);
+        int iy = round(ty / 2.0);
+
+        ix += screen_w / 2;
+        iy += screen_h / 2;
+
+        if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
+        {
+            data[ix + (iy * screen_w)] = yellow;
+        }
+    }
+}
 
 int main()
 {
@@ -602,7 +624,6 @@ int main()
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
-
 
     std::string in_txt;
     std::string last_txt;
@@ -675,9 +696,9 @@ int main()
             }
 
         SDL_Delay(1);
+
         if (in_txt == "c" || in_txt == "C")
         {
-
             for (int jj = 0; jj < (screen_w * screen_h); jj++)
             {
                 data[jj] = black;
@@ -700,30 +721,11 @@ int main()
                 for (int jj = 0; jj < (screen_w * screen_h); jj++)
                 {
                     data[jj] = black;
-                }
-                std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-                const int ratio = screen_w / range_upper;
-                for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
-                {
-                    double tx = x / pt_step_count;
-                    double ty = parser::eval_rpn(rpn, var_name, tx);
-
-                    tx *= (screen_w / static_cast<double>(range_upper));
-                    ty *= (screen_w / static_cast<double>(range_upper));
-
-                    int ix = round(tx / 2.0);
-                    int iy = round(ty / 2.0);
-
-                    ix += screen_w / 2;
-                    iy += screen_h / 2;
-
-                    if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
-                    {
-                        data[ix + (iy * screen_w)] = yellow;
-                    }
-                }
+                }               
             }
             create_canvas(data);
+            std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+            plot(data, range_lower, range_upper, rpn, var_name);
             disp::Render(pWindow, pRenderer, pTexture, data);
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
@@ -738,88 +740,29 @@ int main()
                 for (int jj = 0; jj < (screen_w * screen_h); jj++)
                 {
                     data[jj] = black;
-                }
-                std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-                const int ratio = screen_w / range_upper;
-                for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
-                {
-                    double tx = x / pt_step_count;
-                    double ty = parser::eval_rpn(rpn, var_name, tx);
-
-                    tx *= (screen_w / static_cast<double>(range_upper));
-                    ty *= (screen_w / static_cast<double>(range_upper));
-
-                    int ix = round(tx / 2.0);
-                    int iy = round(ty / 2.0);
-
-                    ix += screen_w / 2;
-                    iy += screen_h / 2;
-
-                    if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
-                    {
-                        data[ix + (iy * screen_w)] = yellow;
-                    }
-                }
-            }
+                }            
+            }          
+            std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+            plot(data, range_lower, range_upper, rpn, var_name);
             create_canvas(data);
             disp::Render(pWindow, pRenderer, pTexture, data);
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
             goto a;
         }
+
         last_txt = in_txt;
-        if (!first_iter)
+        if (!first_iter && in_txt != "-" && in_txt != "+" && !in_txt.empty() && in_txt != "=")
         {
             std::vector<std::string>rpn = parser::s_yard(in_txt, var_name);
             //loop
-            const int ratio = screen_w / range_upper;
-            for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
-            {
-                double tx = x / pt_step_count;
-                double ty = parser::eval_rpn(rpn, var_name, tx);
-
-                tx *= (screen_w / static_cast<double>(range_upper));
-                ty *= (screen_w / static_cast<double>(range_upper));
-
-                int ix = round(tx / 2.0);
-                int iy = round(ty / 2.0);
-
-                ix += screen_w / 2;
-                iy += screen_h / 2;
-
-                if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
-                {
-                    data[ix + (iy * screen_w)] = yellow;
-                }
-            }        
+            plot(data, range_lower, range_upper, rpn, var_name);
         }
-        else if (in_txt != "-" && in_txt != "+")
+        else if (in_txt != "-" && in_txt != "+" && !in_txt.empty() && in_txt != "=")
         {
-            disp::Render(pWindow, pRenderer, pTexture, data);
             std::vector<std::string> rpn = parser::s_yard(in_txt, "x");
-
             //plot
-            const int ratio = screen_w / range_upper;
-            for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
-            {
-                double tx = x / pt_step_count;
-                double ty = parser::eval_rpn(rpn, var_name, tx);
-
-                tx *= (screen_w / static_cast<double>(range_upper));
-                ty *= (screen_w / static_cast<double>(range_upper));
-
-                int ix = round(tx / 2.0);
-                int iy = round(ty / 2.0);
-
-                ix += screen_w / 2;
-                iy += screen_h / 2;
-                //std::cout << "x:" << ix << " y:" << iy << '\n';
-
-                if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
-                {
-                    data[ix + (iy * screen_w)] = yellow;
-                }
-            }
+            plot(data, range_lower, range_upper, rpn, var_name);
             first_iter = false;
         }
         disp::Render(pWindow, pRenderer, pTexture, data);     
