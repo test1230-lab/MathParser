@@ -16,7 +16,6 @@
 #undef main
 
 
-constexpr bool dark_mode = true;
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
 constexpr uint32_t green = 0xFF007F00;
@@ -565,13 +564,10 @@ namespace disp
 
 void create_canvas(uint32_t *data)
 {
-    uint32_t color0 = black;
-    uint32_t color1 = b_red;
-    if (dark_mode)
-    {
-        color0 = green;
-        color1 = red;
-    }
+
+    uint32_t color0 = green;
+    uint32_t color1 = red;
+
 
     //create grid  
     for (int x = grid_spacing; x < screen_w; x += grid_spacing)
@@ -603,58 +599,20 @@ void create_canvas(uint32_t *data)
     }   
 }
 
-/*
-- x, y: upper left corner.
-- texture, rect: outputs.
-*/
-void get_text_and_rect(SDL_Renderer* renderer, int x, int y, char* text,
-    TTF_Font* font, SDL_Texture** texture, SDL_Rect* rect) {
-    int text_width;
-    int text_height;
-    SDL_Surface* surface;
-    SDL_Color textColor = { 255, 255, 255, 0 };
-
-    surface = TTF_RenderText_Solid(font, text, textColor);
-    *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    text_width = surface->w;
-    text_height = surface->h;
-    SDL_FreeSurface(surface);
-    rect->x = x;
-    rect->y = y;
-    rect->w = text_width;
-    rect->h = text_height;
-}
-
 
 int main()
 {
-    bool running = true;
     bool first_iter = true;
 
     uint32_t* data = new uint32_t[screen_w * screen_h];
-    SDL_Rect rect1;
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
-    const SDL_Rect* dstrect = nullptr;
-    SDL_Rect message_rect; //create a rect
-    message_rect.x = 0;  //controls the rect's x coordinate 
-    message_rect.y = 0; // controls the rect's y coordinte
-    message_rect.w = 100; // controls the width of the rect
-    message_rect.h = 100; // controls the height of the rect
 
 
     std::string in_txt;
+    std::string last_txt;
     std::string var_name = "x";
-
-    
-    if (!dark_mode)
-    {
-        for (int jj = 0; jj < (screen_w * screen_h); jj++)
-        {
-            data[jj] = white;
-        }
-    }
 
     create_canvas(data);
 
@@ -668,76 +626,153 @@ int main()
     disp::Render(pWindow, pRenderer, pTexture, data);
 
     while (true)
-    {        
-        SDL_Event e;
-        while (SDL_WaitEvent(&e)) 
-        {
-            if (e.type == SDL_QUIT) 
+    {    
+        a:
+            in_txt.clear();
+            SDL_Event e;
+            while (SDL_WaitEvent(&e)) 
             {
-                disp::Shutdown(&pWindow, &pRenderer, &pTexture);
-            }
-            else if (e.type == SDL_TEXTINPUT) 
-            {
-                
-                in_txt.append(e.text.text);
-                std::cout << in_txt << '\r';
-            }
-            else if (e.type == SDL_KEYDOWN) 
-            {
-                if (e.key.keysym.sym == SDLK_c)
-                {
-                    uint32_t clear_color = white;
-                    if (dark_mode)
-                    {
-                        uint32_t clear_color = black;
-                    }
-                    for (int jj = 0; jj < (screen_w * screen_h); jj++)
-                    {
-                        data[jj] = clear_color;
-                    }
-                    create_canvas(data);
-                }
-                if (e.key.keysym.sym == SDLK_ESCAPE) 
+                if (e.type == SDL_QUIT) 
                 {
                     disp::Shutdown(&pWindow, &pRenderer, &pTexture);
                 }
-
-                else if (e.key.keysym.sym == SDLK_BACKSPACE) 
+                else if (e.type == SDL_TEXTINPUT) 
                 {
-                    if (in_txt.size() > 0) 
+                    in_txt.append(e.text.text);
+                    std::cout << in_txt << '\r';
+                }
+                else if (e.type == SDL_KEYDOWN) 
+                {
+                    if (e.key.keysym.sym == SDLK_ESCAPE) 
                     {
-                        std::string clearstr(in_txt.size(), ' ');
-                        // Removing multi-byte characters from the UTF-8 string.
-                        while (in_txt[in_txt.size() - 1] < -64)
+                        disp::Shutdown(&pWindow, &pRenderer, &pTexture);
+                    }
+
+                    else if (e.key.keysym.sym == SDLK_BACKSPACE) 
+                    {
+                        if (in_txt.size() > 0) 
                         {
+                            std::string clearstr(in_txt.size(), ' ');
+                            // Removing multi-byte characters from the UTF-8 string.
+                            while (in_txt[in_txt.size() - 1] < -64)
+                            {
+                                in_txt.erase(in_txt.size() - 1);
+                                std::cout << in_txt << '\r';
+                            }
                             in_txt.erase(in_txt.size() - 1);
+                            
                         }
-                        in_txt.erase(in_txt.size() - 1);
+                    }
+                }
+                else if (e.type == SDL_KEYUP) 
+                {
+                    if (e.key.keysym.sym == SDLK_RETURN)
+                     {
+                        std::cout << '\n';
+                        break;
                     }
                 }
             }
-            else if (e.type == SDL_KEYUP) 
-            {
-                if (e.key.keysym.sym == SDLK_RETURN)
-                 {
-                    std::cout << '\n';
-                    break;
-                }
-            }
-        }
 
         SDL_Delay(1);
-        if (!first_iter)
+        if (in_txt == "c" || in_txt == "C")
         {
 
+            for (int jj = 0; jj < (screen_w * screen_h); jj++)
+            {
+                data[jj] = black;
+            }
+            create_canvas(data);
+            SDL_Delay(50);
+            goto a;
+        }
+        else if (in_txt == "+")
+        {
+            if ((range_upper - 1) > 0 && (range_lower + 1) < 0)
+            {
+                range_lower++;
+                range_upper--;
+            }
+            
+            if (!last_txt.empty())
+            {
+                for (int jj = 0; jj < (screen_w * screen_h); jj++)
+                {
+                    data[jj] = black;
+                }
+                std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                const int ratio = screen_w / range_upper;
+                for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
+                {
+                    double tx = x / pt_step_count;
+                    double ty = parser::eval_rpn(rpn, var_name, tx);
+
+                    tx *= (screen_w / static_cast<double>(range_upper));
+                    ty *= (screen_w / static_cast<double>(range_upper));
+
+                    int ix = round(tx / 2.0);
+                    int iy = round(ty / 2.0);
+
+                    ix += screen_w / 2;
+                    iy += screen_h / 2;
+
+                    if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
+                    {
+                        data[ix + (iy * screen_w)] = yellow;
+                    }
+                }
+            }
+            create_canvas(data);
+            disp::Render(pWindow, pRenderer, pTexture, data);
+            SDL_Delay(50);
+            goto a;
+        }
+        else if (in_txt == "-")
+        {
+            range_lower--;
+            range_upper++;
+            if (!last_txt.empty())
+            {
+                for (int jj = 0; jj < (screen_w * screen_h); jj++)
+                {
+                    data[jj] = black;
+                }
+                std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                const int ratio = screen_w / range_upper;
+                for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
+                {
+                    double tx = x / pt_step_count;
+                    double ty = parser::eval_rpn(rpn, var_name, tx);
+
+                    tx *= (screen_w / static_cast<double>(range_upper));
+                    ty *= (screen_w / static_cast<double>(range_upper));
+
+                    int ix = round(tx / 2.0);
+                    int iy = round(ty / 2.0);
+
+                    ix += screen_w / 2;
+                    iy += screen_h / 2;
+
+                    if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
+                    {
+                        data[ix + (iy * screen_w)] = yellow;
+                    }
+                }
+            }
+            create_canvas(data);
+            disp::Render(pWindow, pRenderer, pTexture, data);
+            SDL_Delay(1);
+            goto a;
+        }
+        last_txt = in_txt;
+        if (!first_iter)
+        {
+            for (int jj = 0; jj < (screen_w * screen_h); jj++)
+            {
+                data[jj] = black;
+            }
             std::vector<std::string>rpn = parser::s_yard(in_txt, var_name);
             //loop
-            uint32_t line_color = blue;
-            if (dark_mode)
-            {
-                uint32_t line_color = yellow;
-            }
-
             const int ratio = screen_w / range_upper;
             for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
             {
@@ -755,22 +790,16 @@ int main()
 
                 if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
                 {
-                    data[ix + (iy * screen_w)] = line_color;
+                    data[ix + (iy * screen_w)] = yellow;
                 }
-            }
-            
+            }        
         }
-        else
+        else if (in_txt != "-" && in_txt != "+")
         {
             disp::Render(pWindow, pRenderer, pTexture, data);
             std::vector<std::string> rpn = parser::s_yard(in_txt, "x");
 
             //plot
-            uint32_t line_color = blue;
-            if (dark_mode)
-            {
-                uint32_t line_color = yellow;
-            }
             const int ratio = screen_w / range_upper;
             for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
             {
@@ -789,13 +818,12 @@ int main()
 
                 if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
                 {
-                    data[ix + (iy * screen_w)] = line_color;
+                    data[ix + (iy * screen_w)] = yellow;
                 }
             }
             first_iter = false;
         }
-        disp::Render(pWindow, pRenderer, pTexture, data);
-        in_txt.clear();
+        disp::Render(pWindow, pRenderer, pTexture, data);     
     }   
     return 0;
 }
