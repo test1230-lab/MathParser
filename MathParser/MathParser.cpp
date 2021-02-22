@@ -714,16 +714,17 @@ int main()
                 range_lower++;
                 range_upper--;
             }
+
             if (!eqs_on_graph.empty())
             {
                 memset(data, black, screen_w * screen_h * sizeof(uint32_t));
-            }
-            for (std::string& last_txt : eqs_on_graph)
-            {        
-                create_canvas(data);
-                std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-                plot(data, range_lower, range_upper, rpn, var_name);
-                disp::Render(pWindow, pRenderer, pTexture, data);
+                for (std::string& last_txt : eqs_on_graph)
+                {
+                    std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                    plot(data, range_lower, range_upper, rpn, var_name);
+                    create_canvas(data);
+                    disp::Render(pWindow, pRenderer, pTexture, data);
+                }
             }
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
@@ -733,17 +734,18 @@ int main()
         {
             range_lower--;
             range_upper++;
+
             if (!eqs_on_graph.empty())
             {
                 memset(data, black, screen_w * screen_h * sizeof(uint32_t));
-            }
-            for (std::string& last_txt : eqs_on_graph)
-            {
-                std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-                plot(data, range_lower, range_upper, rpn, var_name);
-                create_canvas(data);
-                disp::Render(pWindow, pRenderer, pTexture, data);
-            }
+                for (std::string& last_txt : eqs_on_graph)
+                {
+                    std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                    plot(data, range_lower, range_upper, rpn, var_name);
+                    create_canvas(data);
+                    disp::Render(pWindow, pRenderer, pTexture, data);
+                }
+            }       
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
             goto a;
