@@ -7,12 +7,15 @@
 #include <iterator>
 #include <map>
 #include <stack>
+#include <regex>
 #include <sstream>
 #include <algorithm>
 #include <cmath>
 #include <SDL.h>
 #include <SDL_image.h>
 #undef main
+
+
 
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
@@ -24,14 +27,12 @@ constexpr uint32_t blue = 0xFF0000FF;
 
 constexpr int screen_w = 640;
 constexpr int screen_h = 640;
-constexpr int channels = 3;
 constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
 int range_upper = 5;
 int range_lower = -5;
 constexpr float pt_step_count = 1000;
 
-//should i do using namespace std?
 
 namespace parser
 {
@@ -157,19 +158,24 @@ namespace parser
         return strs.str();
     }
 
-    //tokenize func from https://stackoverflow.com/a/53921
-    //spits using whitespace
+    //from https://stackoverflow.com/a/56204256
+    //modified regex expr
     std::vector<std::string> tokenize(const std::string str)
     {
-        // construct a stream from the string
-        std::stringstream strstr(str);
+        std::vector<std::string> res;
+        const std::regex words_regex("(sin|tan|acos|asin|abs|atan|cosh|sinh|cos|"
+                                     "tanh|acosh|asinh|atanh|exp|ldexp|log|log10|"
+                                     "sqrt|cbrt|tgamma|lgamma|ceil|floor|x)|[0-9]?"
+                                     "([0-9]*[.])?[0-9]+|[\\-\\+\\\\\(\\)\\/\\*\\^\\]",
+                                      std::regex_constants::egrep);
 
-        // use stream iterators to copy the stream to the vector as whitespace separated strings
-        std::istream_iterator<std::string> it(strstr);
-        std::istream_iterator<std::string> end;
-        std::vector<std::string> results(it, end);
-
-        return results;
+        auto words_begin = std::sregex_iterator(str.begin(), str.end(), words_regex);
+        auto words_end = std::sregex_iterator();
+        for (std::sregex_iterator i = words_begin; i != words_end; ++i) 
+        {
+            res.push_back((*i).str());
+        }
+        return res;
     }
 
     //params: 
@@ -587,7 +593,6 @@ void create_canvas(uint32_t *data)
     {
         for (int y = 0; y < screen_h; y++)
         {
-            //printf("x:%d y:%d\n", x, y);
             data[x + (y * screen_w)] = green;
         }
     }
@@ -688,11 +693,12 @@ int main()
                         if (in_txt.size() > 0) 
                         {
                             std::string clearstr(in_txt.size(), ' ');
+                            std::cout << "\x1B[2J\x1B[H";        
+                            std::cout << in_txt << '\r';
                             // Removing multi-byte characters from the UTF-8 string.
                             while (in_txt[in_txt.size() - 1] < -64)
                             {
-                                in_txt.erase(in_txt.size() - 1);
-                                std::cout << in_txt << '\r';
+                                in_txt.erase(in_txt.size() - 1);                       
                             }
                             in_txt.erase(in_txt.size() - 1);
                             
