@@ -22,7 +22,6 @@ constexpr uint32_t yellow = 0xFFFFFF00;
 constexpr uint32_t b_red = 0xFFFF0000;
 constexpr uint32_t blue = 0xFF0000FF;
 
-constexpr double PI = 3.14159274;
 constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int channels = 3;
@@ -188,7 +187,8 @@ namespace parser
         {
             if (to_lower(tok) == "pi")
             {
-                output_queue.push_back(to_string(PI));
+                //output_queue.push_back(to_string(3.14159274));
+                output_queue.push_back(tok);
             }
             else if (tok == var_name)
             {
@@ -255,7 +255,6 @@ namespace parser
             if (op_stack.top() == "(" || op_stack.top() == ")")
             {
                 std::cout << "mismatched parentheses\n";
-                exit(-1);
             }
             output_queue.push_back(op_stack.top());
             op_stack.pop();
@@ -325,13 +324,15 @@ namespace parser
 
     //TODO: negative broken
     double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
-    {     
+    {   
+        double d2;
+        double res = 0.0;
         std::stack<std::string> stack;
         for (const std::string& tok : tokens)
         {
             if (to_lower(tok) == "pi")
             {
-                stack.push(to_string(PI));
+                stack.push(to_string(3.14159274));
             }
             else if (tok == var_name)
             {
@@ -344,14 +345,25 @@ namespace parser
             //handle binary operaters
             else if(is_binary_op(tok))
             {
-                double res = 0.0;
-                const double d2 = std::stod(stack.top());
+                d2 = std::stod(stack.top());
                 stack.pop();
                 if (!stack.empty())
                 {       
                     const double d1 = std::stod(stack.top());
                     stack.pop();
                     res = compute_binary_ops(d1, d2, tok);
+                    stack.push(to_string(res));
+                }
+                else
+                {
+                    if (tok == "-")
+                    {
+                        res = -(d2);
+                    }
+                    else
+                    {
+                        res = d2;
+                    }
                     stack.push(to_string(res));
                 }
             }
@@ -365,11 +377,18 @@ namespace parser
                     double res = compute_unary_ops(d1, tok);
                     stack.push(to_string(res));
                 }
-            }
-            else
-            {
-                std::cout << tok << '\n';
-                continue;
+                else
+                {
+                    if (tok == "-")
+                    {
+                        res = -(d2);
+                    }
+                    else
+                    {
+                        res = d2;
+                    }
+                    stack.push(to_string(res));
+                }
             }
         }
         return std::stod(stack.top());
@@ -655,10 +674,7 @@ int main()
                 else if (e.type == SDL_TEXTINPUT) 
                 {
                     in_txt.append(e.text.text);
-                    if (in_txt != "-" && in_txt != "+")
-                    {
-                        std::cout << in_txt << '\r';
-                    }               
+                    std::cout << in_txt << '\r';
                 }
                 else if (e.type == SDL_KEYDOWN) 
                 {
@@ -764,7 +780,6 @@ int main()
             first_iter = false;
         }
         disp::Render(pWindow, pRenderer, pTexture, data);
-        //
     }   
     return 0;
 }
