@@ -762,6 +762,7 @@ int main()
             first_iter = false;
         }
         disp::Render(pWindow, pRenderer, pTexture, data);
+        //
     }   
     return 0;
 }
