@@ -30,7 +30,7 @@ constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
 int range_upper = 5;
 int range_lower = -5;
-constexpr float pt_step_count = 720;
+constexpr float pt_step_count = 1000;
 
 //should i do using namespace std?
 
@@ -368,6 +368,7 @@ namespace parser
             }
             else
             {
+                std::cout << tok << '\n';
                 continue;
             }
         }
@@ -626,7 +627,7 @@ int main()
     SDL_Texture* pTexture = nullptr;
 
     std::string in_txt;
-    std::string last_txt;
+    std::vector<std::string> eqs_on_graph;
     std::string var_name = "x";
 
     create_canvas(data);
@@ -699,10 +700,8 @@ int main()
 
         if (in_txt == "c" || in_txt == "C")
         {
-            for (int jj = 0; jj < (screen_w * screen_h); jj++)
-            {
-                data[jj] = black;
-            }
+            eqs_on_graph.clear();
+            memset(data, black, screen_w * screen_h * sizeof(uint32_t));
             create_canvas(data);
             disp::Render(pWindow, pRenderer, pTexture, data);
             SDL_Delay(50);
@@ -715,18 +714,17 @@ int main()
                 range_lower++;
                 range_upper--;
             }
-            
-            if (!last_txt.empty())
+            if (!eqs_on_graph.empty())
             {
-                for (int jj = 0; jj < (screen_w * screen_h); jj++)
-                {
-                    data[jj] = black;
-                }               
+                memset(data, black, screen_w * screen_h * sizeof(uint32_t));
             }
-            create_canvas(data);
-            std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-            plot(data, range_lower, range_upper, rpn, var_name);
-            disp::Render(pWindow, pRenderer, pTexture, data);
+            for (std::string& last_txt : eqs_on_graph)
+            {        
+                create_canvas(data);
+                std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                plot(data, range_lower, range_upper, rpn, var_name);
+                disp::Render(pWindow, pRenderer, pTexture, data);
+            }
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
             goto a;
@@ -735,37 +733,35 @@ int main()
         {
             range_lower--;
             range_upper++;
-            if (!last_txt.empty())
+            if (!eqs_on_graph.empty())
             {
-                for (int jj = 0; jj < (screen_w * screen_h); jj++)
-                {
-                    data[jj] = black;
-                }            
-            }          
-            std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-            plot(data, range_lower, range_upper, rpn, var_name);
-            create_canvas(data);
-            disp::Render(pWindow, pRenderer, pTexture, data);
+                memset(data, black, screen_w * screen_h * sizeof(uint32_t));
+            }
+            for (std::string& last_txt : eqs_on_graph)
+            {
+                std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                plot(data, range_lower, range_upper, rpn, var_name);
+                create_canvas(data);
+                disp::Render(pWindow, pRenderer, pTexture, data);
+            }
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
             goto a;
         }
 
-        last_txt = in_txt;
+        eqs_on_graph.push_back(in_txt);
         if (!first_iter && in_txt != "-" && in_txt != "+" && !in_txt.empty() && in_txt != "=")
         {
             std::vector<std::string>rpn = parser::s_yard(in_txt, var_name);
-            //loop
             plot(data, range_lower, range_upper, rpn, var_name);
         }
         else if (in_txt != "-" && in_txt != "+" && !in_txt.empty() && in_txt != "=")
         {
             std::vector<std::string> rpn = parser::s_yard(in_txt, "x");
-            //plot
             plot(data, range_lower, range_upper, rpn, var_name);
             first_iter = false;
         }
-        disp::Render(pWindow, pRenderer, pTexture, data);     
+        disp::Render(pWindow, pRenderer, pTexture, data);
     }   
     return 0;
 }
