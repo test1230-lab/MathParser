@@ -14,7 +14,6 @@
 #include <SDL.h>
 #undef main
 
-
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
 constexpr uint32_t green = 0xFF007F00;
@@ -550,7 +549,6 @@ void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::str
 int main()
 {
     bool first_iter = true;
-
     uint32_t* data = new uint32_t[screen_w * screen_h];
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
