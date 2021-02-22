@@ -327,7 +327,6 @@ namespace parser
         }
     }
 
-    //TODO: negative broken
     double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
     {   
         double d2;
