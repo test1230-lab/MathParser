@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <cmath>
 #include <SDL.h>
-#include <SDL_image.h>
 #undef main
 
 
@@ -21,7 +20,7 @@ constexpr uint32_t black = 0x00000000;
 constexpr uint32_t green = 0xFF007F00;
 constexpr uint32_t red = 0xFFBB0000;
 constexpr uint32_t yellow = 0xFFFFFF00;
-constexpr uint32_t b_red = 0xFFFF0000;
+constexpr uint32_t bright_red = 0xFFFF0000;
 constexpr uint32_t blue = 0xFF0000FF;
 
 constexpr int screen_w = 640;
@@ -30,7 +29,10 @@ constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
 int range_upper = 5;
 int range_lower = -5;
-constexpr float pt_step_count = 1000;
+
+//plots a point on a line every 0.001 units
+//higher this is the slower the program will run
+constexpr float pt_step_count = 1000; 
 
 
 namespace parser
@@ -264,26 +266,11 @@ namespace parser
     
     double compute_binary_ops(double d1, double d2, const std::string op)
     {
-        if (op == "*")
-        {
-            return d1 * d2;
-        }
-        else if (op == "+")
-        {
-            return d1 + d2;
-        }
-        else if (op == "-")
-        {
-            return d1 - d2;
-        }
-        else if (op == "/")
-        {
-            return d1 / d2;
-        }
-        else if (op == "^")
-        {
-            return std::pow(d1, d2);
-        }
+        if (op == "*") return d1 * d2;
+        else if (op == "+") return d1 + d2;
+        else if (op == "-") return d1 - d2;
+        else if (op == "/") return d1 / d2;
+        else if (op == "^") return std::pow(d1, d2);
         else
         {
             std::cout << R"(invalid operator: ")" << op << R"("  passed to func "compute_binary_ops")" << '\n';
@@ -355,14 +342,8 @@ namespace parser
                 }
                 else
                 {
-                    if (tok == "-")
-                    {
-                        res = -(d2);
-                    }
-                    else
-                    {
-                        res = d2;
-                    }
+                    if (tok == "-") res = -(d2);
+                    else res = d2;
                     stack.push(to_string(res));
                 }
             }
@@ -378,14 +359,8 @@ namespace parser
                 }
                 else
                 {
-                    if (tok == "-")
-                    {
-                        res = -(d2);
-                    }
-                    else
-                    {
-                        res = d2;
-                    }
+                    if (tok == "-") res = -(d2);
+                    else res = d2;
                     stack.push(to_string(res));
                 }
             }
@@ -598,7 +573,7 @@ int main()
 
     while (true)
     {    
-        a:
+        get_input:
             in_txt.clear();
             SDL_Event e;
             while (SDL_WaitEvent(&e)) 
@@ -630,10 +605,8 @@ int main()
                             {
                                 in_txt.erase(in_txt.size() - 1);                       
                             }
-                            in_txt.erase(in_txt.size() - 1);
-                            std::cout << "\x1B[2J\x1B[H";
-                            std::cout << in_txt << '\r';
-                            
+                            in_txt.erase(in_txt.size() - 1);                           
+                            std::cout << in_txt << std::string(in_txt.size()+1, ' ') << '\r';
                         }
                     }
                 }
@@ -659,7 +632,7 @@ int main()
             create_canvas(data);
             disp::Render(pWindow, pRenderer, pTexture, data);
             SDL_Delay(50);
-            goto a;
+            goto get_input;
         }
         else if (in_txt == "+")
         {
@@ -682,7 +655,7 @@ int main()
             }
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
-            goto a;
+            goto get_input;
         }
         else if (in_txt == "-")
         {
@@ -702,7 +675,7 @@ int main()
             }       
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
             SDL_Delay(50);
-            goto a;
+            goto get_input;
         }
 
         eqs_on_graph.push_back(in_txt);

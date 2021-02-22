@@ -75,16 +75,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Users\wow\source\repos\MathParser\SDL2_ttf\include;C:\Users\wow\source\repos\MathParser\SDL2_img\include;C:\Users\wow\source\repos\MathParser\SDL2\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\wow\source\repos\MathParser\SDL2_ttf\lib\x64;C:\Users\wow\source\repos\MathParser\SDL2_img\lib\x64;C:\Users\wow\source\repos\MathParser\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\wow\source\repos\MathParser\SDL2\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\wow\source\repos\MathParser\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Users\wow\source\repos\MathParser\SDL2_ttf\include;C:\Users\wow\source\repos\MathParser\SDL2_img\include;C:\Users\wow\source\repos\MathParser\SDL2\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\wow\source\repos\MathParser\SDL2_ttf\lib\x64;C:\Users\wow\source\repos\MathParser\SDL2_img\lib\x64;C:\Users\wow\source\repos\MathParser\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\wow\source\repos\MathParser\SDL2\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\wow\source\repos\MathParser\SDL2\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -113,7 +113,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -143,7 +143,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
