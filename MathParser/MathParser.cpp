@@ -66,7 +66,7 @@ namespace parser
 
     bool is_binary_op(const std::string& str)
     {
-        if (str == "%" || str == "/" || str == "*" || str == "+" || str == "-")
+        if (str == "%" || str == "/" || str == "*" || str == "+" || str == "-" || str == "^")
         {
             return true;
         }
@@ -287,7 +287,7 @@ namespace parser
         }
         else if (op == "^")
         {
-            return std::pow(d1, d2); //TODO: FIX DOING x ^ 2 RESULTS IN CONSTANT Y VALUE
+            return std::pow(d1, d2);
         }
         else
         {
