@@ -501,6 +501,7 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
 int main()
 {
     bool first_iter = true;
+    SDL_Event e;
     uint32_t* data = new uint32_t[screen_w * screen_h];
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
@@ -518,61 +519,58 @@ int main()
     pRenderer = SDL_CreateRenderer(pWindow, -1, SDL_RENDERER_ACCELERATED);
     pTexture = SDL_CreateTexture(pRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, screen_w, screen_h);
 
-
     SDL_StartTextInput();
     render(pWindow, pRenderer, pTexture, data);
 
-    while (true)
+    for(;;)
     {    
-        get_input:
-            in_txt.clear();
-            SDL_Event e;
-            while (SDL_WaitEvent(&e)) 
+        in_txt.clear();
+        while (SDL_WaitEvent(&e)) 
+        {
+            if (e.type == SDL_QUIT) 
             {
-                if (e.type == SDL_QUIT) 
+                disp::Shutdown(&pWindow, &pRenderer, &pTexture);
+            }
+            else if (e.type == SDL_TEXTINPUT) 
+            {
+                in_txt.append(e.text.text);
+                std::cout << in_txt << '\r';
+            }
+            else if (e.type == SDL_KEYDOWN) 
+            {
+                if (e.key.keysym.sym == SDLK_ESCAPE) 
                 {
                     disp::Shutdown(&pWindow, &pRenderer, &pTexture);
                 }
-                else if (e.type == SDL_TEXTINPUT) 
-                {
-                    in_txt.append(e.text.text);
-                    std::cout << in_txt << '\r';
-                }
-                else if (e.type == SDL_KEYDOWN) 
-                {
-                    if (e.key.keysym.sym == SDLK_ESCAPE) 
-                    {
-                        disp::Shutdown(&pWindow, &pRenderer, &pTexture);
-                    }
 
-                    else if (e.key.keysym.sym == SDLK_BACKSPACE) 
-                    {
-                        if (in_txt.size() > 0) 
-                        {
-                            std::string clearstr(in_txt.size(), ' ');
-                            
-                            // Removing multi-byte characters from the UTF-8 string.
-                            while (in_txt[in_txt.size() - 1] < -64)
-                            {
-                                in_txt.erase(in_txt.size() - 1);                       
-                            }
-                            in_txt.erase(in_txt.size() - 1);                           
-                            std::cout << in_txt << std::string(in_txt.size()+1, ' ') << '\r';
-                        }
-                    }
-                }
-                else if (e.type == SDL_KEYUP) 
+                else if (e.key.keysym.sym == SDLK_BACKSPACE) 
                 {
-                    if (e.key.keysym.sym == SDLK_RETURN)
-                     {
-                        if (in_txt != "-" && in_txt != "+")
+                    if (in_txt.size() > 0) 
+                    {
+                        std::string clearstr(in_txt.size(), ' ');
+                            
+                        // Removing multi-byte characters from the UTF-8 string.
+                        while (in_txt[in_txt.size() - 1] < -64)
                         {
-                            std::cout << '\n';
+                            in_txt.erase(in_txt.size() - 1);                       
                         }
-                        break;
+                        in_txt.erase(in_txt.size() - 1);                           
+                        std::cout << in_txt << std::string(in_txt.size()+1, ' ') << '\r';
                     }
                 }
             }
+            else if (e.type == SDL_KEYUP) 
+            {
+                if (e.key.keysym.sym == SDLK_RETURN)
+                    {
+                    if (in_txt != "-" && in_txt != "+")
+                    {
+                        std::cout << '\n';
+                    }
+                    break;
+                }
+            }
+        }
 
         SDL_Delay(1);
 
@@ -582,8 +580,7 @@ int main()
             memset(data, black, screen_w * screen_h * sizeof(uint32_t));
             create_canvas(data);
             render(pWindow, pRenderer, pTexture, data);
-            SDL_Delay(50);
-            goto get_input;
+            continue;
         }
         else if (in_txt == "+")
         {
@@ -605,8 +602,7 @@ int main()
                 }
             }
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
-            SDL_Delay(50);
-            goto get_input;
+            continue;
         }
         else if (in_txt == "-")
         {
@@ -625,8 +621,7 @@ int main()
                 }
             }       
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
-            SDL_Delay(50);
-            goto get_input;
+            continue;
         }
 
         eqs_on_graph.push_back(in_txt);
