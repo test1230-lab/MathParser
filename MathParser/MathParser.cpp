@@ -16,7 +16,6 @@
 #undef main
 
 
-
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
 constexpr uint32_t green = 0xFF007F00;
@@ -165,7 +164,7 @@ namespace parser
         std::vector<std::string> res;
         const std::regex words_regex("(sin|tan|acos|asin|abs|atan|cosh|sinh|cos|"
                                      "tanh|acosh|asinh|atanh|exp|ldexp|log|log10|"
-                                     "sqrt|cbrt|tgamma|lgamma|ceil|floor|x)|[0-9]?"
+                                     "sqrt|cbrt|tgamma|lgamma|ceil|floor|x)|^-|[0-9]?"
                                      "([0-9]*[.])?[0-9]+|[\\-\\+\\\\\(\\)\\/\\*\\^\\]",
                                       std::regex_constants::egrep);
 
