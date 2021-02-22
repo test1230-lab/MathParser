@@ -577,6 +577,7 @@ int main()
         if (in_txt == "c" || in_txt == "C")
         {
             eqs_on_graph.clear();
+            std::cout << "\033[2J" << "\033[1;1H";
             memset(data, black, screen_w * screen_h * sizeof(uint32_t));
             create_canvas(data);
             render(pWindow, pRenderer, pTexture, data);
