@@ -426,69 +426,6 @@ namespace disp
         exit(-1);
     }
 
-    // Initialize SDL Components 
-    int32_t Startup(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** ppTexture)
-    {
-        SDL_Init(SDL_INIT_VIDEO);
-
-        if (e(!ppWindow, "Potiner to Window* was null\n")) return -1;
-
-        *ppWindow = CreateCenteredWindow(screen_w, screen_h, win_title);
-
-        if (e(!*ppWindow, "No Window. Aborting..."))
-        {
-            Shutdown(ppWindow, ppRenderer, ppTexture);
-            return -1;
-        }
-
-        if (e(!ppRenderer, "Pointer to Renderer* was null\n")) return -1;
-
-        *ppRenderer = SDL_CreateRenderer(*ppWindow, g_kRenderDeviceFlags, SDL_RENDERER_ACCELERATED);
-
-        if (e(!ppRenderer, "No Renderer. Aborting..."))
-        {
-            Shutdown(ppWindow, ppRenderer, ppTexture);
-            return -1;
-        }
-
-        if (e(!ppTexture, "Pointer to Texture* was null\n")) return -1;
-
-        *ppTexture = SDL_CreateTexture(*ppRenderer, SDL_PIXELFORMAT_ARGB8888,
-            SDL_TEXTUREACCESS_STREAMING, screen_w, screen_h);;
-
-        if (e(!*ppTexture, "No back buffer Texture. Aborting..."))
-        {
-            Shutdown(ppWindow, ppRenderer, ppTexture);
-            return -1;
-        }
-
-        return 0;
-    }
-
-    // Call this within every render loop
-    int32_t Render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t* data)
-    {
-        // The Back Buffer texture may be stored with an extra bit of width (pitch) on the video card in order to properly
-        // align it in VRAM should the width not lie on the correct memory boundary (usually four bytes).
-        int32_t pitch = 0;
-
-        // This will hold a pointer to the memory position in VRAM where our Back Buffer texture lies
-        uint32_t* pPixelBuffer = nullptr;
-
-        // Lock the memory in order to write our Back Buffer image to it
-        if (!SDL_LockTexture(pTexture, NULL, (void**)&pPixelBuffer, &pitch))
-        {
-            pitch /= sizeof(uint32_t);
-            memcpy(pPixelBuffer, data, screen_h * static_cast<size_t>(pitch)* sizeof(uint32_t));
-            SDL_UnlockTexture(pTexture);
-            SDL_RenderCopy(pRenderer, pTexture, NULL, NULL);
-            SDL_RenderPresent(pRenderer);
-
-            return 0;
-        }
-        else
-            return g_kErrorOccurred;
-    }
 }
 
 void create_canvas(uint32_t *data)
@@ -546,6 +483,21 @@ void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::str
     }
 }
 
+void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t* data)
+{
+    int32_t pitch = 0;
+    uint32_t* pPixelBuffer = nullptr;
+    if (!SDL_LockTexture(pTexture, NULL, (void**)&pPixelBuffer, &pitch))
+    {
+        pitch /= sizeof(uint32_t);
+        memcpy(pPixelBuffer, data, screen_h * static_cast<size_t>(pitch) * sizeof(uint32_t));
+        SDL_UnlockTexture(pTexture);
+        SDL_RenderCopy(pRenderer, pTexture, NULL, NULL);
+        SDL_RenderPresent(pRenderer);
+    }
+}
+
+
 int main()
 {
     bool first_iter = true;
@@ -560,14 +512,15 @@ int main()
 
     create_canvas(data);
 
-    if (disp::e(disp::Startup(&pWindow, &pRenderer, &pTexture), "Startup Failed. Aborting...\n"))
-    {
-        disp::Shutdown(&pWindow, &pRenderer, &pTexture);
-        return -1;
-    }
+    SDL_Init(SDL_INIT_VIDEO);
+
+    pWindow = disp::CreateCenteredWindow(screen_w, screen_h, win_title);
+    pRenderer = SDL_CreateRenderer(pWindow, -1, SDL_RENDERER_ACCELERATED);
+    pTexture = SDL_CreateTexture(pRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, screen_w, screen_h);
+
 
     SDL_StartTextInput();
-    disp::Render(pWindow, pRenderer, pTexture, data);
+    render(pWindow, pRenderer, pTexture, data);
 
     while (true)
     {    
@@ -628,7 +581,7 @@ int main()
             eqs_on_graph.clear();
             memset(data, black, screen_w * screen_h * sizeof(uint32_t));
             create_canvas(data);
-            disp::Render(pWindow, pRenderer, pTexture, data);
+            render(pWindow, pRenderer, pTexture, data);
             SDL_Delay(50);
             goto get_input;
         }
@@ -648,7 +601,7 @@ int main()
                     std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
                     plot(data, range_lower, range_upper, rpn, var_name);
                     create_canvas(data);
-                    disp::Render(pWindow, pRenderer, pTexture, data);
+                    render(pWindow, pRenderer, pTexture, data);
                 }
             }
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
@@ -668,7 +621,7 @@ int main()
                     std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
                     plot(data, range_lower, range_upper, rpn, var_name);
                     create_canvas(data);
-                    disp::Render(pWindow, pRenderer, pTexture, data);
+                    render(pWindow, pRenderer, pTexture, data);
                 }
             }       
             std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
@@ -688,7 +641,7 @@ int main()
             plot(data, range_lower, range_upper, rpn, var_name);
             first_iter = false;
         }
-        disp::Render(pWindow, pRenderer, pTexture, data);
+        render(pWindow, pRenderer, pTexture, data);
     }   
     return 0;
 }
