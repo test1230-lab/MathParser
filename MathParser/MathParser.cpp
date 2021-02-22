@@ -693,14 +693,15 @@ int main()
                         if (in_txt.size() > 0) 
                         {
                             std::string clearstr(in_txt.size(), ' ');
-                            std::cout << "\x1B[2J\x1B[H";        
-                            std::cout << in_txt << '\r';
+                            
                             // Removing multi-byte characters from the UTF-8 string.
                             while (in_txt[in_txt.size() - 1] < -64)
                             {
                                 in_txt.erase(in_txt.size() - 1);                       
                             }
                             in_txt.erase(in_txt.size() - 1);
+                            std::cout << "\x1B[2J\x1B[H";
+                            std::cout << in_txt << '\r';
                             
                         }
                     }
