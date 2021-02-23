@@ -7,12 +7,15 @@
 #include <iterator>
 #include <map>
 #include <stack>
+#include <string_view>
 #include <regex>
 #include <sstream>
 #include <algorithm>
 #include <cmath>
 #include <SDL.h>
 #undef main
+
+#include "dragonbox/dragonbox_to_chars.h"
 
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
@@ -145,14 +148,14 @@ namespace parser
             return 0;
         }
     }
-
+    
     std::string to_string(double d)
     {
-        std::ostringstream strs;
-        strs << d;
-        return strs.str();
+        char buffer[31];
+        jkj::dragonbox::to_chars(d, buffer);
+        return buffer;
     }
-
+    
     //from https://stackoverflow.com/a/56204256
     //modified regex expr
     std::vector<std::string> tokenize(const std::string str)
@@ -534,7 +537,10 @@ int main()
             else if (e.type == SDL_TEXTINPUT) 
             {
                 in_txt.append(e.text.text);
-                std::cout << in_txt << '\r';
+                if (in_txt != "c")
+                {
+                    std::cout << in_txt << '\r';
+                }                
             }
             else if (e.type == SDL_KEYDOWN) 
             {
@@ -542,7 +548,57 @@ int main()
                 {
                     disp::Shutdown(&pWindow, &pRenderer, &pTexture);
                 }
-
+                
+                else if (e.key.keysym.sym == SDLK_c)
+                {
+                    eqs_on_graph.clear();
+                    std::cout << "\033[2J" << "\033[1;1H";
+                    memset(data, black, screen_w * screen_h * sizeof(uint32_t));
+                    create_canvas(data);
+                    render(pWindow, pRenderer, pTexture, data);
+                    continue;
+                }
+                else if (e.key.keysym.sym == SDLK_UP)
+                {
+                    if ((range_upper - 1) > 0 && (range_lower + 1) < 0)
+                    {
+                        range_lower++;
+                        range_upper--;
+                    }
+                    if (!eqs_on_graph.empty())
+                    {
+                        memset(data, black, screen_w * screen_h * sizeof(uint32_t));
+                        for (std::string& last_txt : eqs_on_graph)
+                        {
+                            std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                            plot(data, range_lower, range_upper, rpn, var_name);
+                            create_canvas(data);
+                            render(pWindow, pRenderer, pTexture, data);
+                        }
+                    }
+                    std::cout << std::string(20, ' ') << '\r';
+                    std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
+                    continue;
+                }
+                else if (e.key.keysym.sym == SDLK_DOWN)
+                {
+                    range_lower--;
+                    range_upper++;
+                    if (!eqs_on_graph.empty())
+                    {
+                        memset(data, black, screen_w * screen_h * sizeof(uint32_t));
+                        for (std::string& last_txt : eqs_on_graph)
+                        {
+                            std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                            plot(data, range_lower, range_upper, rpn, var_name);
+                            create_canvas(data);
+                            render(pWindow, pRenderer, pTexture, data);
+                        }
+                    }
+                    std::cout << std::string(20, ' ') << '\r';
+                    std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
+                    continue;
+                }
                 else if (e.key.keysym.sym == SDLK_BACKSPACE) 
                 {
                     if (in_txt.size() > 0) 
@@ -563,66 +619,13 @@ int main()
             {
                 if (e.key.keysym.sym == SDLK_RETURN)
                     {
-                    if (in_txt != "-" && in_txt != "+")
+                    if (in_txt != "c")
                     {
                         std::cout << '\n';
                     }
                     break;
                 }
             }
-        }
-
-        SDL_Delay(1);
-
-        if (in_txt == "c" || in_txt == "C")
-        {
-            eqs_on_graph.clear();
-            std::cout << "\033[2J" << "\033[1;1H";
-            memset(data, black, screen_w * screen_h * sizeof(uint32_t));
-            create_canvas(data);
-            render(pWindow, pRenderer, pTexture, data);
-            continue;
-        }
-        else if (in_txt == "+")
-        {
-            if ((range_upper - 1) > 0 && (range_lower + 1) < 0)
-            {
-                range_lower++;
-                range_upper--;
-            }
-
-            if (!eqs_on_graph.empty())
-            {
-                memset(data, black, screen_w * screen_h * sizeof(uint32_t));
-                for (std::string& last_txt : eqs_on_graph)
-                {
-                    std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-                    plot(data, range_lower, range_upper, rpn, var_name);
-                    create_canvas(data);
-                    render(pWindow, pRenderer, pTexture, data);
-                }
-            }
-            std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
-            continue;
-        }
-        else if (in_txt == "-")
-        {
-            range_lower--;
-            range_upper++;
-
-            if (!eqs_on_graph.empty())
-            {
-                memset(data, black, screen_w * screen_h * sizeof(uint32_t));
-                for (std::string& last_txt : eqs_on_graph)
-                {
-                    std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-                    plot(data, range_lower, range_upper, rpn, var_name);
-                    create_canvas(data);
-                    render(pWindow, pRenderer, pTexture, data);
-                }
-            }       
-            std::cout << "range: " << range_lower << " to: " << range_upper << '\n';
-            continue;
         }
 
         eqs_on_graph.push_back(in_txt);
