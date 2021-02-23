@@ -444,7 +444,9 @@ void create_canvas(uint32_t *data)
 void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::variant<double, std::string>>& rpn, std::string var_name)
 {
     const int ratio = screen_w / range_upper;
-    for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
+
+    #pragma omp parallel for
+    for (int x = (int)(range_lower * pt_step_count); x < (int)(range_upper * pt_step_count); x++)
     {
         double tx = x / pt_step_count;
         double ty = parser::eval_rpn(rpn, var_name, tx);
