@@ -164,18 +164,17 @@ namespace parser
     //var_name - any occurances of this as a seperate token will be treated as a varable
     //convert string in infix notation to a string in Reverse Polish Notation
     //using dijkstra's shunting yard algorithm 
-    std::vector<std::string> s_yard(std::string str, std::string var_name)
+    std::vector<std::variant<double, std::string>> s_yard(std::string str, std::string var_name)
     {
         std::vector<std::string> tokens = tokenize(str);
-        std::vector<std::string> output_queue;
+        std::vector<std::variant<double, std::string>> output_queue;
         std::stack<std::string> op_stack;
 
         for (const std::string& tok : tokens)
         {
             if (tok == "pi")
             {
-                //output_queue.push_back(to_string(3.14159274));
-                output_queue.push_back(tok);
+                output_queue.push_back(3.14159274);
             }
             else if (tok == var_name)
             {
@@ -183,7 +182,7 @@ namespace parser
             }
             else if (is_num(tok))
             {
-                output_queue.push_back(tok);
+                output_queue.push_back(strtod(tok.c_str(), NULL));
             }
             else if (is_func(tok))
             {
@@ -294,27 +293,24 @@ namespace parser
         }
     }
 
-    double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
+    double eval_rpn(const std::vector<std::variant<double, std::string>>& tokens, std::string var_name, double var_value)
     {   
         double d2 = 0.0;
         double res = 0.0;
         std::stack<std::variant<double, std::string>> stack;
-        for (const std::string& tok : tokens)
+        for (const auto& tok : tokens)
         {
-            if (is_num(tok))
+            if (auto* number = std::get_if<double>(&tok))
             {
-                stack.push(strtod(tok.c_str(), NULL));
+                double n = *number;
+                stack.push(n);
             }
-            else if (tok == var_name)
+            else if (std::get<std::string>(tok) == var_name)
             {
                 stack.push(var_value);
             }
-            else if (tok == "pi")
-            {
-                stack.push(3.14159274);
-            } 
             //handle binary operaters
-            else if(is_binary_op(tok))
+            else if(is_binary_op(std::get<std::string>(tok)))
             {
                 d2 = std::get<double>(stack.top());
                 stack.pop();
@@ -322,29 +318,29 @@ namespace parser
                 {       
                     const double d1 = std::get<double>(stack.top());
                     stack.pop();
-                    res = compute_binary_ops(d1, d2, tok);
+                    res = compute_binary_ops(d1, d2, std::get<std::string>(tok));
                     stack.push(res);
                 }
                 else
                 {
-                    if (tok == "-") res = -(d2);
+                    if (std::get<std::string>(tok) == "-") res = -(d2);
                     else res = d2;
                     stack.push(res);
                 }
             }
             //handle funcs(unary ops)
-            else if (is_func(tok))
+            else if (is_func(std::get<std::string>(tok)))
             {
                 if (!stack.empty())
                 {
                     const double d1 = std::get<double>(stack.top());
                     stack.pop();
-                    double res = compute_unary_ops(d1, tok);
+                    double res = compute_unary_ops(d1, std::get<std::string>(tok));
                     stack.push(res);
                 }
                 else
                 {
-                    if (tok == "-") res = -(d2);
+                    if (std::get<std::string>(tok) == "-") res = -(d2);
                     else res = d2;
                     stack.push(res);
                 }
@@ -445,7 +441,7 @@ void create_canvas(uint32_t *data)
     }   
 }
 
-void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::string>& rpn, std::string var_name)
+void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::variant<double, std::string>>& rpn, std::string var_name)
 {
     const int ratio = screen_w / range_upper;
     for (int x = range_lower * pt_step_count; x < range_upper * pt_step_count; x++)
@@ -552,7 +548,7 @@ int main()
                         create_canvas(data);
                         for (std::string& last_txt : eqs_on_graph)
                         {
-                            std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                            std::vector<std::variant<double, std::string>> rpn = parser::s_yard(last_txt, var_name);
                             plot(data, range_lower, range_upper, rpn, var_name);                   
                         }
                         render(pWindow, pRenderer, pTexture, data);
@@ -572,7 +568,7 @@ int main()
                         create_canvas(data);
                         for (std::string& last_txt : eqs_on_graph)
                         {
-                            std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
+                            std::vector<std::variant<double, std::string>>rpn = parser::s_yard(last_txt, var_name);
                             plot(data, range_lower, range_upper, rpn, var_name);                          
                         }
                         render(pWindow, pRenderer, pTexture, data);
@@ -610,12 +606,12 @@ int main()
         eqs_on_graph.push_back(in_txt);
         if (!first_iter && in_txt != "-" && in_txt != "+" && !in_txt.empty() && in_txt != "=")
         {
-            std::vector<std::string>rpn = parser::s_yard(in_txt, var_name);
+            std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
             plot(data, range_lower, range_upper, rpn, var_name);
         }
         else if (in_txt != "-" && in_txt != "+" && !in_txt.empty() && in_txt != "=")
         {
-            std::vector<std::string> rpn = parser::s_yard(in_txt, "x");
+            std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, "x");
             plot(data, range_lower, range_upper, rpn, var_name);
             first_iter = false;
         }
