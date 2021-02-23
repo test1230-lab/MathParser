@@ -33,7 +33,7 @@ int range_lower = -5;
 
 //plots a point on a line every 0.001 units
 //higher this is the slower the program will run
-constexpr float pt_step_count = 1000; 
+float pt_step_count = 1000; 
 
 
 namespace parser
@@ -542,6 +542,11 @@ int main()
                         range_lower++;
                         range_upper--;
                     }
+                    pt_step_count += 2;
+                    if (pt_step_count >= 1000)
+                    {
+                        pt_step_count = 1000;
+                    }
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
@@ -562,6 +567,11 @@ int main()
                 {
                     range_lower--;
                     range_upper++;
+                    pt_step_count -= 2;
+                    if (pt_step_count <= 100)
+                    {
+                        pt_step_count = 100;
+                    }
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
