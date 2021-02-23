@@ -537,10 +537,7 @@ int main()
             else if (e.type == SDL_TEXTINPUT) 
             {
                 in_txt.append(e.text.text);
-                if (in_txt != "c")
-                {
-                    std::cout << in_txt << '\r';
-                }                
+                std::cout << in_txt << '\r';              
             }
             else if (e.type == SDL_KEYDOWN) 
             {
@@ -548,8 +545,8 @@ int main()
                 {
                     disp::Shutdown(&pWindow, &pRenderer, &pTexture);
                 }
-                
-                else if (e.key.keysym.sym == SDLK_c)
+                //clear
+                else if (e.key.keysym.sym == SDLK_DELETE)
                 {
                     eqs_on_graph.clear();
                     std::cout << "\033[2J" << "\033[1;1H";
@@ -558,6 +555,7 @@ int main()
                     render(pWindow, pRenderer, pTexture, data);
                     continue;
                 }
+                //zoom in
                 else if (e.key.keysym.sym == SDLK_UP)
                 {
                     if ((range_upper - 1) > 0 && (range_lower + 1) < 0)
@@ -580,6 +578,7 @@ int main()
                     std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
                     continue;
                 }
+                //zoom out
                 else if (e.key.keysym.sym == SDLK_DOWN)
                 {
                     range_lower--;
@@ -618,11 +617,8 @@ int main()
             else if (e.type == SDL_KEYUP) 
             {
                 if (e.key.keysym.sym == SDLK_RETURN)
-                    {
-                    if (in_txt != "c")
-                    {
-                        std::cout << '\n';
-                    }
+                {
+                    std::cout << '\n';
                     break;
                 }
             }
