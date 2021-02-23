@@ -9,13 +9,12 @@
 #include <stack>
 #include <string_view>
 #include <regex>
+#include <variant>
 #include <sstream>
 #include <algorithm>
 #include <cmath>
 #include <SDL.h>
 #undef main
-
-#include "dragonbox/dragonbox_to_chars.h"
 
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
@@ -123,16 +122,6 @@ namespace parser
         return true;
     }
 
-    std::string to_lower(const std::string& str)
-    {
-        std::string res;
-        for (const char &s : str)
-        {
-            res.push_back(std::tolower(s));
-        }
-        return res;
-    }
-
     int get_prec(const std::string str)
     {
         if (is_func(str))
@@ -149,12 +138,6 @@ namespace parser
         }
     }
     
-    std::string to_string(double d)
-    {
-        char buffer[31];
-        jkj::dragonbox::to_chars(d, buffer);
-        return buffer;
-    }
     
     //from https://stackoverflow.com/a/56204256
     //modified regex expr
@@ -187,9 +170,9 @@ namespace parser
         std::vector<std::string> output_queue;
         std::stack<std::string> op_stack;
 
-        for (std::string& tok : tokens)
+        for (const std::string& tok : tokens)
         {
-            if (to_lower(tok) == "pi")
+            if (tok == "pi")
             {
                 //output_queue.push_back(to_string(3.14159274));
                 output_queue.push_back(tok);
@@ -313,40 +296,40 @@ namespace parser
 
     double eval_rpn(const std::vector<std::string>& tokens, std::string var_name, double var_value)
     {   
-        double d2;
+        double d2 = 0.0;
         double res = 0.0;
-        std::stack<std::string> stack;
+        std::stack<std::variant<double, std::string>> stack;
         for (const std::string& tok : tokens)
         {
-            if (to_lower(tok) == "pi")
+            if (is_num(tok))
             {
-                stack.push(to_string(3.14159274));
+                stack.push(strtod(tok.c_str(), NULL));
             }
             else if (tok == var_name)
             {
-                stack.push(to_string(var_value));
+                stack.push(var_value);
             }
-            else if (is_num(tok))
+            else if (tok == "pi")
             {
-                stack.push(tok);
-            }
+                stack.push(3.14159274);
+            } 
             //handle binary operaters
             else if(is_binary_op(tok))
             {
-                d2 = std::stod(stack.top());
+                d2 = std::get<double>(stack.top());
                 stack.pop();
                 if (!stack.empty())
                 {       
-                    const double d1 = std::stod(stack.top());
+                    const double d1 = std::get<double>(stack.top());
                     stack.pop();
                     res = compute_binary_ops(d1, d2, tok);
-                    stack.push(to_string(res));
+                    stack.push(res);
                 }
                 else
                 {
                     if (tok == "-") res = -(d2);
                     else res = d2;
-                    stack.push(to_string(res));
+                    stack.push(res);
                 }
             }
             //handle funcs(unary ops)
@@ -354,20 +337,20 @@ namespace parser
             {
                 if (!stack.empty())
                 {
-                    const double d1 = std::stod(stack.top());
+                    const double d1 = std::get<double>(stack.top());
                     stack.pop();
                     double res = compute_unary_ops(d1, tok);
-                    stack.push(to_string(res));
+                    stack.push(res);
                 }
                 else
                 {
                     if (tok == "-") res = -(d2);
                     else res = d2;
-                    stack.push(to_string(res));
+                    stack.push(res);
                 }
             }
         }
-        return std::stod(stack.top());
+        return std::get<double>(stack.top());
     }
 }
 
@@ -566,13 +549,13 @@ int main()
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
+                        create_canvas(data);
                         for (std::string& last_txt : eqs_on_graph)
                         {
                             std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-                            plot(data, range_lower, range_upper, rpn, var_name);
-                            create_canvas(data);
-                            render(pWindow, pRenderer, pTexture, data);
+                            plot(data, range_lower, range_upper, rpn, var_name);                   
                         }
+                        render(pWindow, pRenderer, pTexture, data);
                     }
                     std::cout << std::string(20, ' ') << '\r';
                     std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
@@ -586,13 +569,13 @@ int main()
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
+                        create_canvas(data);
                         for (std::string& last_txt : eqs_on_graph)
                         {
                             std::vector<std::string>rpn = parser::s_yard(last_txt, var_name);
-                            plot(data, range_lower, range_upper, rpn, var_name);
-                            create_canvas(data);
-                            render(pWindow, pRenderer, pTexture, data);
+                            plot(data, range_lower, range_upper, rpn, var_name);                          
                         }
+                        render(pWindow, pRenderer, pTexture, data);
                     }
                     std::cout << std::string(20, ' ') << '\r';
                     std::cout << "range: " << range_lower << " to: " << range_upper << '\r';

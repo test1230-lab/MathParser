@@ -147,11 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="dragonbox\dragonbox_to_chars.cpp" />
     <ClCompile Include="MathParser.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="icon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
