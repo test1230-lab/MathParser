@@ -454,7 +454,7 @@ void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::var
         tx *= (screen_w / static_cast<double>(range_upper));
         ty *= (screen_w / static_cast<double>(range_upper));
 
-        int ix = round(tx / 2.0);
+        int ix = -round(tx / 2.0);
         int iy = round(ty / 2.0);
 
         ix += screen_w / 2;
