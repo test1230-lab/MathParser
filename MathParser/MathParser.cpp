@@ -614,18 +614,21 @@ int main()
         }
 
         eqs_on_graph.push_back(in_txt);
-        if (!first_iter && in_txt != "-" && in_txt != "+" && !in_txt.empty() && in_txt != "=")
+
+        //wont evaluate as true if the input is one letter and not var name
+        if (!first_iter && !in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1))
         {
             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
             plot(data, range_lower, range_upper, rpn, var_name);
+            render(pWindow, pRenderer, pTexture, data);
         }
-        else if (in_txt != "-" && in_txt != "+" && !in_txt.empty() && in_txt != "=")
+        else if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1)) 
         {
             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, "x");
             plot(data, range_lower, range_upper, rpn, var_name);
+            render(pWindow, pRenderer, pTexture, data);
             first_iter = false;
-        }
-        render(pWindow, pRenderer, pTexture, data);
+        }       
     }   
     return 0;
 }
