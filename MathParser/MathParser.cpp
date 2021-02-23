@@ -504,6 +504,8 @@ int main()
     SDL_StartTextInput();
     render(pWindow, pRenderer, pTexture, data);
 
+    std::cout << "zoom out with arrow down, zoom in with arrow up, clear with del\n";
+
     for(;;)
     {    
         in_txt.clear();
