@@ -31,10 +31,11 @@ constexpr const char* win_title = "Graphing Calc";
 int range_upper = 5;
 int range_lower = -5;
 
-//plots a point on a line every 0.001 units
-//higher this is the slower the program will run
-float pt_step_count = 1000; 
 
+struct pt_2d
+{
+    int x, y;
+};
 
 namespace parser
 {
@@ -137,7 +138,7 @@ namespace parser
             return 0;
         }
     }
-    
+
     
     //from https://stackoverflow.com/a/56204256
     //modified regex expr
@@ -410,6 +411,45 @@ namespace disp
 
 }
 
+//from https://stackoverflow.com/a/27030598
+template<typename T>
+std::vector<double> linspace(T start_in, T end_in, int num_in)
+{
+    std::vector<double> linspaced;
+
+    double start = static_cast<double>(start_in);
+    double end = static_cast<double>(end_in);
+    double num = static_cast<double>(num_in);
+
+    if (num == 0) { return linspaced; }
+    if (num == 1)
+    {
+        linspaced.push_back(start);
+        return linspaced;
+    }
+
+    double delta = (end - start) / (num - 1);
+
+    for (int i = 0; i < num - 1; ++i)
+    {
+        linspaced.push_back(start + delta * i);
+    }
+    linspaced.push_back(end); // I want to ensure that start and end
+                              // are exactly the same as the input
+    return linspaced;
+}
+
+
+inline double pow2(double d)
+{
+    return d * d;
+}
+
+inline double dist_2d(pt_2d a, pt_2d b)
+{
+    return sqrt(pow2(b.x - a.x) + pow2(b.y - a.y));
+}
+
 void create_canvas(uint32_t *data)
 {
     //create grid  
@@ -441,11 +481,31 @@ void create_canvas(uint32_t *data)
     }   
 }
 
-void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::variant<double, std::string>>& rpn, std::string var_name)
+void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
+{
+    double dist = dist_2d(a, b);
+    if (dist > 2 && dist < max)
+    {
+        std::vector<double> xvec = linspace(a.x, b.x, (int)dist + 1);
+        std::vector<double> yvec = linspace(a.y, b.y, (int)dist + 1);
+        for (int i = 0; i < xvec.size(); i++)
+        {
+            int ix = round(xvec[i]);
+            int iy = round(yvec[i]);
+            if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
+            {
+                data[ix + (iy * screen_w)] = yellow;
+            }
+        }
+    }
+}
+
+void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::variant<double, std::string>>& rpn, std::string var_name, float pt_step_count, int max)
 {
     const int ratio = screen_w / range_upper;
+    int lst_ix = 0;
+    int lst_iy = 0;
 
-    #pragma omp parallel for
     for (int x = (int)(range_lower * pt_step_count); x < (int)(range_upper * pt_step_count); x++)
     {
         double tx = x / pt_step_count;
@@ -464,6 +524,10 @@ void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::var
         {
             data[ix + (iy * screen_w)] = yellow;
         }
+        
+        fill_gaps(data, { lst_ix, lst_iy }, { ix, iy }, max);
+        lst_ix = ix;
+        lst_iy = iy;
     }
 }
 
@@ -484,6 +548,8 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
 
 int main()
 {
+    int max = 125;
+    float pt_step_count = 1000;
     bool first_iter = true;
     SDL_Event e;
     uint32_t* data = new uint32_t[screen_w * screen_h];
@@ -546,11 +612,18 @@ int main()
                         range_lower++;
                         range_upper--;
                     }
+                    
                     pt_step_count += 2;
+                    max--;
                     if (pt_step_count >= 1000)
                     {
                         pt_step_count = 1000;
                     }
+                    if (max <= 125)
+                    {
+                        max = 125;
+                    }
+
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
@@ -558,7 +631,7 @@ int main()
                         for (std::string& last_txt : eqs_on_graph)
                         {
                             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(last_txt, var_name);
-                            plot(data, range_lower, range_upper, rpn, var_name);                   
+                            plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);                   
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
@@ -571,11 +644,17 @@ int main()
                 {
                     range_lower--;
                     range_upper++;
+                    max++;
                     pt_step_count -= 2;
-                    if (pt_step_count <= 100)
+                    if (pt_step_count <= 200)
                     {
-                        pt_step_count = 100;
+                        pt_step_count = 200;
                     }
+                    if (max >= 500)
+                    {
+                        max = 500;
+                    }
+
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
@@ -583,7 +662,7 @@ int main()
                         for (std::string& last_txt : eqs_on_graph)
                         {
                             std::vector<std::variant<double, std::string>>rpn = parser::s_yard(last_txt, var_name);
-                            plot(data, range_lower, range_upper, rpn, var_name);                          
+                            plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);    
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
@@ -623,13 +702,13 @@ int main()
         if (!first_iter && !in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1))
         {
             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
-            plot(data, range_lower, range_upper, rpn, var_name);
+            plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);
             render(pWindow, pRenderer, pTexture, data);
         }
         else if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1)) 
         {
             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, "x");
-            plot(data, range_lower, range_upper, rpn, var_name);
+            plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);
             render(pWindow, pRenderer, pTexture, data);
             first_iter = false;
         }       
