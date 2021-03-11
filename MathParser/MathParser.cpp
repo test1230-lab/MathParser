@@ -28,9 +28,6 @@ constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
-int range_upper = 5;
-int range_lower = -5;
-
 
 struct pt_2d
 {
@@ -175,7 +172,7 @@ namespace parser
         {
             if (tok == "pi")
             {
-                output_queue.push_back(3.14159274);
+                output_queue.push_back(M_PI);
             }
             else if (tok == var_name)
             {
@@ -439,15 +436,15 @@ std::vector<double> linspace(T start_in, T end_in, int num_in)
     return linspaced;
 }
 
-
-inline double pow2(double d)
+template<typename T>
+inline T sqr(T d)
 {
     return d * d;
 }
 
 inline double dist_2d(pt_2d a, pt_2d b)
 {
-    return sqrt(pow2(b.x - a.x) + pow2(b.y - a.y));
+    return sqrt(sqr(b.x - a.x) + sqr(b.y - a.y));
 }
 
 void create_canvas(uint32_t *data)
@@ -548,6 +545,9 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
 
 int main()
 {
+    
+    int range_upper = 5;
+    int range_lower = -5;
     int max = 125;
     float pt_step_count = 1000;
     bool first_iter = true;
@@ -619,9 +619,9 @@ int main()
                     {
                         pt_step_count = 1000;
                     }
-                    if (max <= 125)
+                    if (max <= 200)
                     {
-                        max = 125;
+                        max = 200;
                     }
 
                     if (!eqs_on_graph.empty())
