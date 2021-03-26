@@ -60,7 +60,7 @@ namespace parser
         else return false;
     }
 
-    bool is_binary_op(const std::string& str)
+    bool is_binary_op(const std::string_view& str)
     {
         if (str == "%" || str == "/" || str == "*" || str == "+" || str == "-" || str == "^")
         {
@@ -69,7 +69,7 @@ namespace parser
         else return false;
     }
 
-    bool is_func(const std::string& str)
+    bool is_func(const std::string_view& str)
     {
         if (str == "sin" || str == "tan" || str == "acos" || str == "asin" || str == "abs")
         {
@@ -99,7 +99,7 @@ namespace parser
     }
 
     //handls decimal numbers
-    bool is_num(const std::string& s)
+    bool is_num(const std::string_view& s)
     {
         int num_found_periods = 0;
         for (int i = 0; i < s.size(); i++)
@@ -139,7 +139,7 @@ namespace parser
     
     //from https://stackoverflow.com/a/56204256
     //modified regex expr
-    std::vector<std::string> tokenize(const std::string str)
+    std::vector<std::string> tokenize(const std::string& str)
     {
         std::vector<std::string> res;
         const std::regex words_regex("(sin|tan|acos|asin|abs|atan|cosh|sinh|cos|"
@@ -162,7 +162,7 @@ namespace parser
     //var_name - any occurances of this as a seperate token will be treated as a varable
     //convert string in infix notation to a string in Reverse Polish Notation
     //using dijkstra's shunting yard algorithm 
-    std::vector<std::variant<double, std::string>> s_yard(std::string str, std::string var_name)
+    std::vector<std::variant<double, std::string>> s_yard(const std::string& str, std::string var_name)
     {
         std::vector<std::string> tokens = tokenize(str);
         std::vector<std::variant<double, std::string>> output_queue;
@@ -246,7 +246,7 @@ namespace parser
         return output_queue;
     }
     
-    double compute_binary_ops(double d1, double d2, const std::string op)
+    double compute_binary_ops(double d1, double d2, const std::string_view& op)
     {
         if (op == "*") return d1 * d2;
         else if (op == "+") return d1 + d2;
@@ -260,7 +260,7 @@ namespace parser
         }
     }
 
-    double compute_unary_ops(double d, const std::string op)
+    double compute_unary_ops( double d, const std::string_view& op)
     {
         if (op == "sin") return sin(d);
         else if (op == "cos") return cos(d);
@@ -298,10 +298,9 @@ namespace parser
         std::stack<std::variant<double, std::string>> stack;
         for (const auto& tok : tokens)
         {
-            if (auto* number = std::get_if<double>(&tok))
+            if (const auto *number = std::get_if<double>(&tok))
             {
-                double n = *number;
-                stack.push(n);
+                stack.push(*number);
             }
             else if (std::get<std::string>(tok) == var_name)
             {
