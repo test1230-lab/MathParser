@@ -655,9 +655,7 @@ int main()
                 else if (e.key.keysym.sym == SDLK_BACKSPACE) 
                 {
                     if (in_txt.size() > 0) 
-                    {
-                        std::string clearstr(in_txt.size(), ' ');
-                            
+                    {                          
                         // Removing multi-byte characters from the UTF-8 string.
                         while (in_txt[in_txt.size() - 1] < -64)
                         {
