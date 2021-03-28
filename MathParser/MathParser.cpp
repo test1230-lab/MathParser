@@ -71,27 +71,11 @@ namespace parser
 
     bool is_func(const std::string_view& str)
     {
-        if (str == "sin" || str == "tan" || str == "acos" || str == "asin" || str == "abs")
-        {
-            return true;
-        }
-        else if (str == "atan" || str == "cosh" || str == "sinh" || str == "cos")
-        {
-            return true;
-        }
-        else if (str == "tanh" || str == "acosh" || str == "asinh" || str == "atanh")
-        {
-            return true;
-        }
-        else if (str == "exp" || str == "ldexp" || str == "log")
-        {
-            return true;
-        }
-        else if (str == "log10" ||  str == "sqrt" || str == "cbrt")
-        {
-            return true;
-        }
-        else if (str == "tgamma" || str == "lgamma" || str == "ceil" || str == "floor")
+        if (str == "sin" || str == "tan" || str == "acos" || str == "asin" || str == "abs" || \
+            str == "atan" || str == "cosh" || str == "sinh" || str == "cos" || str == "tanh" || \
+            str == "acosh" || str == "asinh" || str == "atanh" || str == "exp" || str == "ldexp" || \
+            str == "log" || str == "log10" || str == "sqrt" || str == "cbrt" || str == "tgamma" || \
+            str == "lgamma" || str == "ceil" || str == "floor")
         {
             return true;
         }
@@ -164,11 +148,10 @@ namespace parser
     //using dijkstra's shunting yard algorithm 
     std::vector<std::variant<double, std::string>> s_yard(const std::string& str, std::string var_name)
     {
-        std::vector<std::string> tokens = tokenize(str);
         std::vector<std::variant<double, std::string>> output_queue;
         std::stack<std::string> op_stack;
 
-        for (const std::string& tok : tokens)
+        for (const std::string& tok : tokenize(str))
         {
             if (tok == "pi")
             {
@@ -298,7 +281,7 @@ namespace parser
         std::stack<std::variant<double, std::string>> stack;
         for (const auto& tok : tokens)
         {
-            if (const auto *number = std::get_if<double>(&tok))
+            if (const double *number = std::get_if<double>(&tok))
             {
                 stack.push(*number);
             }
@@ -482,8 +465,8 @@ void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
     double dist = dist_2d(a, b);
     if (dist > 2 && dist < max)
     {
-        std::vector<double> xvec = linspace(a.x, b.x, (int)dist + 1);
-        std::vector<double> yvec = linspace(a.y, b.y, (int)dist + 1);
+        std::vector<double> xvec = linspace(a.x, b.x, static_cast<int>(dist) + 1);
+        std::vector<double> yvec = linspace(a.y, b.y, static_cast<int>(dist) + 1);
         for (int i = 0; i < xvec.size(); i++)
         {
             int ix = round(xvec[i]);
@@ -502,7 +485,7 @@ void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::var
     int lst_ix = 0;
     int lst_iy = 0;
 
-    for (int x = (int)(range_lower * pt_step_count); x < (int)(range_upper * pt_step_count); x++)
+    for (int x = (range_lower * pt_step_count); x < (range_upper * pt_step_count); x++)
     {
         double tx = x / pt_step_count;
         double ty = parser::eval_rpn(rpn, var_name, tx);
@@ -627,7 +610,7 @@ int main()
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
                         create_canvas(data);
-                        for (std::string& last_txt : eqs_on_graph)
+                        for (const std::string& last_txt : eqs_on_graph)
                         {
                             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(last_txt, var_name);
                             plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);                   
@@ -658,7 +641,7 @@ int main()
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
                         create_canvas(data);
-                        for (std::string& last_txt : eqs_on_graph)
+                        for (const std::string& last_txt : eqs_on_graph)
                         {
                             std::vector<std::variant<double, std::string>>rpn = parser::s_yard(last_txt, var_name);
                             plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);    
