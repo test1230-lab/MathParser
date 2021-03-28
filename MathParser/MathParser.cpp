@@ -82,6 +82,7 @@ namespace parser
         else return false;
     }
 
+
     //handls decimal numbers
     bool is_num(const std::string_view& s)
     {
@@ -104,7 +105,7 @@ namespace parser
         return true;
     }
 
-    int get_prec(const std::string str)
+    int get_prec(const std::string& str)
     {
         if (is_func(str))
         {
