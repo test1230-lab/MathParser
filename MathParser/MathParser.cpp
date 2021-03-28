@@ -36,8 +36,8 @@ struct pt_2d
 
 namespace parser
 {
-    const int LEFT_ASSOC = 0;
-    const int RIGHT_ASSOC = 1;
+    constexpr int LEFT_ASSOC = 0;
+    constexpr int RIGHT_ASSOC = 1;
 
     //pair is <prec, assoc_id>
     const std::map<std::string, std::pair<int, int>> assoc_prec{ {"^", std::make_pair(4, RIGHT_ASSOC)},
@@ -469,8 +469,8 @@ void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
         std::vector<double> yvec = linspace(a.y, b.y, static_cast<int>(dist) + 1);
         for (int i = 0; i < xvec.size(); i++)
         {
-            int ix = round(xvec[i]);
-            int iy = round(yvec[i]);
+            int ix = static_cast<int>(round(xvec[i]));
+            int iy = static_cast<int>(round(yvec[i]));
             if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
             {
                 data[ix + (iy * screen_w)] = yellow;
@@ -538,12 +538,9 @@ int main()
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
-
     std::string in_txt;
     std::vector<std::string> eqs_on_graph;
     const std::string var_name = "x";
-
-    create_canvas(data);
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -552,6 +549,7 @@ int main()
     pTexture = SDL_CreateTexture(pRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, screen_w, screen_h);
 
     SDL_StartTextInput();
+    create_canvas(data);
     render(pWindow, pRenderer, pTexture, data);
 
     std::cout << "zoom out with arrow down, zoom in with arrow up, clear with del\n";
@@ -662,7 +660,7 @@ int main()
                             in_txt.erase(in_txt.size() - 1);                       
                         }
                         in_txt.erase(in_txt.size() - 1);                           
-                        std::cout << in_txt << std::string(in_txt.size()+1, ' ') << '\r';
+                        std::cout << in_txt << std::string(in_txt.size() + 1, ' ') << '\r';
                     }
                 }
             }
@@ -687,7 +685,7 @@ int main()
         }
         else if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1)) 
         {
-            std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, "x");
+            std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
             plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);
             render(pWindow, pRenderer, pTexture, data);
             first_iter = false;
