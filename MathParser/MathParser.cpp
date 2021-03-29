@@ -28,6 +28,7 @@ constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
+constexpr const char* var_name = "x";
 
 struct pt_2d
 {
@@ -87,9 +88,9 @@ namespace parser
     bool is_num(const std::string_view& s)
     {
         int num_found_periods = 0;
-        for (int i = 0; i < s.size(); i++)
+        for (auto c : s)
         {
-            if (s[i] == '.')
+            if (c == '.')
             {
                 num_found_periods++;
                 if (num_found_periods > 1)
@@ -97,7 +98,7 @@ namespace parser
                     return false;
                 }
             }
-            if (!isdigit(s[i]) && s[i] != '.')
+            if (!isdigit(c) && c != '.')
             {
                 return false;
             }
@@ -129,7 +130,7 @@ namespace parser
         std::vector<std::string> res;
         const std::regex words_regex("(sin|tan|acos|asin|abs|atan|cosh|sinh|cos|"
                                      "tanh|acosh|asinh|atanh|exp|ldexp|log|log10|"
-                                     "sqrt|cbrt|tgamma|lgamma|ceil|floor|x)|^-|[0-9]?"
+                                     "sqrt|cbrt|tgamma|lgamma|ceil|floor|x|e)|^-|[0-9]?"
                                      "([0-9]*[.])?[0-9]+|[\\-\\+\\\\\(\\)\\/\\*\\^\\]",
                                       std::regex_constants::egrep);
 
@@ -157,6 +158,10 @@ namespace parser
             if (tok == "pi")
             {
                 output_queue.push_back(M_PI);
+            }
+            else if (tok == "e")
+            {
+                output_queue.push_back(exp(1));
             }
             else if (tok == var_name)
             {
@@ -275,6 +280,7 @@ namespace parser
         }
     }
 
+
     double eval_rpn(const std::vector<std::variant<double, std::string>>& tokens, std::string var_name, double var_value)
     {   
         double d2 = 0.0;
@@ -386,7 +392,7 @@ namespace disp
             SDL_DestroyWindow(*ppWindow);
             *ppWindow = nullptr;
         }
-        exit(-1);
+        exit(0);
     }
 
 }
@@ -528,7 +534,6 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
 
 int main()
 {
-    
     int range_upper = 5;
     int range_lower = -5;
     int max = 125;
@@ -541,7 +546,6 @@ int main()
     SDL_Texture* pTexture = nullptr;
     std::string in_txt;
     std::vector<std::string> eqs_on_graph;
-    const std::string var_name = "x";
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -655,11 +659,6 @@ int main()
                 {
                     if (in_txt.size() > 0) 
                     {                          
-                        // Removing multi-byte characters from the UTF-8 string.
-                        while (in_txt[in_txt.size() - 1] < -64)
-                        {
-                            in_txt.erase(in_txt.size() - 1);                       
-                        }
                         in_txt.erase(in_txt.size() - 1);                           
                         std::cout << in_txt << std::string(in_txt.size() + 1, ' ') << '\r';
                     }
