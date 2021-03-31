@@ -1,17 +1,12 @@
-#include <istream>
+#include <iostream>
+#include <unordered_map>
+#include <string_view>
 #include <string>
 #include <vector>
 #include <utility>
-#include <iostream>
-#include <ostream>
-#include <iterator>
-#include <map>
 #include <stack>
-#include <string_view>
 #include <regex>
 #include <variant>
-#include <sstream>
-#include <algorithm>
 #include <cmath>
 #include <SDL.h>
 #undef main
@@ -41,11 +36,34 @@ namespace parser
     constexpr int RIGHT_ASSOC = 1;
 
     //pair is <prec, assoc_id>
-    const std::map<std::string, std::pair<int, int>> assoc_prec{ {"^", std::make_pair(4, RIGHT_ASSOC)},
-                                                                 {"*", std::make_pair(3, LEFT_ASSOC)},
-                                                                 {"/", std::make_pair(3, LEFT_ASSOC)},
-                                                                 {"+", std::make_pair(2, LEFT_ASSOC)},
-                                                                 {"-", std::make_pair(2, LEFT_ASSOC)} };
+    static const std::unordered_map<std::string, std::pair<int, int>> assoc_prec{ {"^", std::make_pair(4, RIGHT_ASSOC)},
+                                                                                  {"*", std::make_pair(3, LEFT_ASSOC)},
+                                                                                  {"/", std::make_pair(3, LEFT_ASSOC)},
+                                                                                  {"+", std::make_pair(2, LEFT_ASSOC)},
+                                                                                  {"-", std::make_pair(2, LEFT_ASSOC)} };
+
+    static const std::unordered_map<std::string, double(*)(double)> unary_func_tbl{ {"sin"   , &sin},
+                                                                                    {"cos"   , &cos},
+                                                                                    {"sqrt"  , &sqrt},
+                                                                                    {"abs"   , &abs},
+                                                                                    {"tan"   , &tan},
+                                                                                    {"acos"  , &acos},
+                                                                                    {"asin"  , &asin},
+                                                                                    {"atan"  , &atan},
+                                                                                    {"log"   , &log},
+                                                                                    {"log10" , &log10},
+                                                                                    {"cosh"  , &cosh},
+                                                                                    {"sinh"  , &sinh},
+                                                                                    {"tanh"  , &tanh},
+                                                                                    {"exp"   , &exp},
+                                                                                    {"cbrt"  , &cbrt},
+                                                                                    {"tgamma", &tgamma},
+                                                                                    {"lgamma", &lgamma},
+                                                                                    {"ceil"  , &ceil},
+                                                                                    {"floor" , &floor},
+                                                                                    {"acosh" , &acosh},
+                                                                                    {"asinh" , &asinh},
+                                                                                    {"atanh" , &atanh} };
 
     bool is_right_assoc(const std::string& str)
     {
@@ -153,7 +171,7 @@ namespace parser
         std::vector<std::variant<double, std::string>> output_queue;
         std::stack<std::string> op_stack;
 
-        for (const std::string& tok : tokenize(str))
+        for (const auto& tok : tokenize(str))
         {
             if (tok == "pi")
             {
@@ -249,38 +267,6 @@ namespace parser
         }
     }
 
-    double compute_unary_ops( double d, const std::string_view& op)
-    {
-        if (op == "sin") return sin(d);
-        else if (op == "cos") return cos(d);
-        else if (op == "sqrt") return sqrt(d);
-        else if (op == "abs") return abs(d);
-        else if (op == "tan") return tan(d);
-        else if (op == "acos") return acos(d);
-        else if (op == "asin") return asin(d);
-        else if (op == "atan") return atan(d);
-        else if (op == "log") return log(d);
-        else if (op == "log10") return log10(d);
-        else if (op == "cosh") return cosh(d);
-        else if (op == "sinh") return sinh(d);
-        else if (op == "tanh") return tanh(d);
-        else if (op == "exp") return exp(d);
-        else if (op == "cbrt") return cbrt(d);
-        else if (op == "tgamma") return tgamma(d);
-        else if (op == "lgamma") return lgamma(d);
-        else if (op == "ceil") return ceil(d);
-        else if (op == "floor") return floor(d);
-        else if (op == "acosh") return acosh(d);
-        else if (op == "asinh") return asinh(d);
-        else if (op == "atanh") return atanh(d);
-        else
-        {
-            std::cout << R"(invalid operator/func : ")" << op << R"("  passed to func "compute_unary_ops")" << '\n';
-            exit(-1);
-        }
-    }
-
-
     double eval_rpn(const std::vector<std::variant<double, std::string>>& tokens, std::string var_name, double var_value)
     {   
         double d2 = 0.0;
@@ -322,7 +308,8 @@ namespace parser
                 {
                     const double d1 = std::get<double>(stack.top());
                     stack.pop();
-                    double res = compute_unary_ops(d1, std::get<std::string>(tok));
+                    //double res = compute_unary_ops(d1, std::get<std::string>(tok));
+                    double res = (*unary_func_tbl.at(std::get<std::string>(tok)))(d1);
                     stack.push(res);
                 }
                 else
@@ -402,6 +389,7 @@ template<typename T>
 std::vector<double> linspace(T start_in, T end_in, int num_in)
 {
     std::vector<double> linspaced;
+    linspaced.reserve(num_in);
 
     double start = static_cast<double>(start_in);
     double end = static_cast<double>(end_in);
@@ -431,7 +419,7 @@ inline T sqr(T d)
     return d * d;
 }
 
-inline double dist_2d(pt_2d a, pt_2d b)
+inline double dist_2d(const pt_2d& a, const pt_2d& b)
 {
     return sqrt(sqr(b.x - a.x) + sqr(b.y - a.y));
 }
@@ -467,7 +455,7 @@ void create_canvas(uint32_t *data)
     }   
 }
 
-void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
+void fill_gaps(uint32_t* data, const pt_2d& a, const pt_2d& b, int max)
 {
     double dist = dist_2d(a, b);
     if (dist > 2 && dist < max)
