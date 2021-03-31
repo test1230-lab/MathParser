@@ -42,28 +42,28 @@ namespace parser
                                                                                   {"+", std::make_pair(2, LEFT_ASSOC)},
                                                                                   {"-", std::make_pair(2, LEFT_ASSOC)} };
 
-    static const std::unordered_map<std::string, double(*)(double)> unary_func_tbl{ {"sin"   , &sin},
-                                                                                    {"cos"   , &cos},
-                                                                                    {"sqrt"  , &sqrt},
-                                                                                    {"abs"   , &abs},
-                                                                                    {"tan"   , &tan},
-                                                                                    {"acos"  , &acos},
-                                                                                    {"asin"  , &asin},
-                                                                                    {"atan"  , &atan},
-                                                                                    {"log"   , &log},
-                                                                                    {"log10" , &log10},
-                                                                                    {"cosh"  , &cosh},
-                                                                                    {"sinh"  , &sinh},
-                                                                                    {"tanh"  , &tanh},
-                                                                                    {"exp"   , &exp},
-                                                                                    {"cbrt"  , &cbrt},
+    static const std::unordered_map<std::string, double(*)(double)> unary_func_tbl{ {"sin", &sin},
+                                                                                    {"cos", &cos},
+                                                                                    {"sqrt", &sqrt},
+                                                                                    {"abs", &abs},
+                                                                                    {"tan", &tan},
+                                                                                    {"acos", &acos},
+                                                                                    {"asin", &asin},
+                                                                                    {"atan", &atan},
+                                                                                    {"log", &log},
+                                                                                    {"log10", &log10},
+                                                                                    {"cosh", &cosh},
+                                                                                    {"sinh", &sinh},
+                                                                                    {"tanh", &tanh},
+                                                                                    {"exp", &exp},
+                                                                                    {"cbrt", &cbrt},
                                                                                     {"tgamma", &tgamma},
                                                                                     {"lgamma", &lgamma},
-                                                                                    {"ceil"  , &ceil},
-                                                                                    {"floor" , &floor},
-                                                                                    {"acosh" , &acosh},
-                                                                                    {"asinh" , &asinh},
-                                                                                    {"atanh" , &atanh} };
+                                                                                    {"ceil", &ceil},
+                                                                                    {"floor", &floor},
+                                                                                    {"acosh", &acosh},
+                                                                                    {"asinh", &asinh},
+                                                                                    {"atanh", &atanh} };
 
     bool is_right_assoc(const std::string& str)
     {
@@ -79,7 +79,7 @@ namespace parser
         else return false;
     }
 
-    bool is_binary_op(const std::string_view& str)
+    bool is_binary_op(std::string_view str)
     {
         if (str == "%" || str == "/" || str == "*" || str == "+" || str == "-" || str == "^")
         {
@@ -88,7 +88,7 @@ namespace parser
         else return false;
     }
 
-    bool is_func(const std::string_view& str)
+    bool is_func(std::string_view str)
     {
         if (str == "sin" || str == "tan" || str == "acos" || str == "asin" || str == "abs" || \
             str == "atan" || str == "cosh" || str == "sinh" || str == "cos" || str == "tanh" || \
@@ -103,10 +103,10 @@ namespace parser
 
 
     //handls decimal numbers
-    bool is_num(const std::string_view& s)
+    bool is_num(std::string_view str)
     {
         int num_found_periods = 0;
-        for (auto c : s)
+        for (const auto c : str)
         {
             if (c == '.')
             {
@@ -195,14 +195,6 @@ namespace parser
             }
             else if (is_binary_op(tok))
             {   
-                /*
-                    While loop:
-                    while there are elements in the stack
-                    while ((there is an operator at the top of the operator stack)
-                    and ((the operator at the top of the operator stack has greater precedence)
-                    or (the operator at the top of the operator stack has equal precedence and the token is left associative))
-                    and (the operator at the top of the operator stack is not a left parenthesis))
-                */
                 while (!op_stack.empty() && \
                       (is_binary_op(op_stack.top()) && get_prec(op_stack.top()) > (get_prec(tok)) || \
                       (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok))) && \
@@ -253,13 +245,13 @@ namespace parser
         return output_queue;
     }
     
-    double compute_binary_ops(double d1, double d2, const std::string_view& op)
+    double compute_binary_ops(double d1, double d2, std::string_view op)
     {
         if (op == "*") return d1 * d2;
         else if (op == "+") return d1 + d2;
         else if (op == "-") return d1 - d2;
         else if (op == "/") return d1 / d2;
-        else if (op == "^") return std::pow(d1, d2);
+        else if (op == "^") return pow(d1, d2);
         else
         {
             std::cout << R"(invalid operator: ")" << op << R"("  passed to func "compute_binary_ops")" << '\n';
@@ -308,8 +300,7 @@ namespace parser
                 {
                     const double d1 = std::get<double>(stack.top());
                     stack.pop();
-                    //double res = compute_unary_ops(d1, std::get<std::string>(tok));
-                    double res = (*unary_func_tbl.at(std::get<std::string>(tok)))(d1);
+                    res = (*unary_func_tbl.at(std::get<std::string>(tok)))(d1);
                     stack.push(res);
                 }
                 else
