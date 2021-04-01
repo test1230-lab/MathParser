@@ -5,8 +5,10 @@
 #include <vector>
 #include <utility>
 #include <stack>
+#include <numbers>
 #include <regex>
 #include <variant>
+#include <chrono>
 #include <cmath>
 #include <SDL.h>
 #undef main
@@ -63,6 +65,7 @@ namespace parser
                                                                                     {"floor", &floor},
                                                                                     {"acosh", &acosh},
                                                                                     {"asinh", &asinh},
+                                                                                    {"trunc", &trunc},
                                                                                     {"atanh", &atanh} };
 
     bool is_right_assoc(const std::string& str)
@@ -94,7 +97,7 @@ namespace parser
             str == "atan" || str == "cosh" || str == "sinh" || str == "cos" || str == "tanh" || \
             str == "acosh" || str == "asinh" || str == "atanh" || str == "exp" || str == "ldexp" || \
             str == "log" || str == "log10" || str == "sqrt" || str == "cbrt" || str == "tgamma" || \
-            str == "lgamma" || str == "ceil" || str == "floor")
+            str == "lgamma" || str == "ceil" || str == "floor" || str == "trunc")
         {
             return true;
         }
@@ -175,11 +178,11 @@ namespace parser
         {
             if (tok == "pi")
             {
-                output_queue.push_back(M_PI);
+                output_queue.push_back(std::numbers::pi_v<double>);
             }
             else if (tok == "e")
             {
-                output_queue.push_back(exp(1));
+                output_queue.push_back(std::numbers::e_v<double>);
             }
             else if (tok == var_name)
             {
@@ -509,7 +512,6 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
         SDL_RenderPresent(pRenderer);
     }
 }
-
 
 int main()
 {
