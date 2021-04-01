@@ -77,7 +77,7 @@ namespace parser
 
     bool is_binary_op(std::string_view str)
     {
-        if (str == "%" || str == "/" || str == "*" || str == "+" || str == "-" || str == "^")
+        if (str == "/" || str == "*" || str == "+" || str == "-" || str == "^")
         {
             return true;
         }
