@@ -68,13 +68,6 @@ namespace parser
                                                                                     {"trunc", &trunc},
                                                                                     {"atanh", &atanh} };
 
-    bool is_right_assoc(const std::string& str)
-    {
-        int id = assoc_prec.at(str).second;
-        if (id == 1) return true;
-        else return false;
-    }
-
     bool is_left_assoc(const std::string& str)
     {
         int id = assoc_prec.at(str).second;
