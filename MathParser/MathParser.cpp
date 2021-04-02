@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <string_view>
 #include <string>
 #include <vector>
@@ -38,37 +39,43 @@ namespace parser
     constexpr int RIGHT_ASSOC = 1;
 
     //pair is <prec, assoc_id>
-    static const std::unordered_map<std::string, std::pair<int, int>> assoc_prec{ {"^", std::make_pair(4, RIGHT_ASSOC)},
-                                                                                  {"*", std::make_pair(3, LEFT_ASSOC)},
-                                                                                  {"/", std::make_pair(3, LEFT_ASSOC)},
-                                                                                  {"+", std::make_pair(2, LEFT_ASSOC)},
-                                                                                  {"-", std::make_pair(2, LEFT_ASSOC)} };
+    static const std::unordered_map<std::string_view, std::pair<int, int>> assoc_prec{ {"^", std::make_pair(4, RIGHT_ASSOC)},
+                                                                                       {"*", std::make_pair(3, LEFT_ASSOC)},
+                                                                                       {"/", std::make_pair(3, LEFT_ASSOC)},
+                                                                                       {"+", std::make_pair(2, LEFT_ASSOC)},
+                                                                                       {"-", std::make_pair(2, LEFT_ASSOC)} };
 
-    static const std::unordered_map<std::string, double(*)(double)> unary_func_tbl{ {"sin", &sin},
-                                                                                    {"cos", &cos},
-                                                                                    {"sqrt", &sqrt},
-                                                                                    {"abs", &abs},
-                                                                                    {"tan", &tan},
-                                                                                    {"acos", &acos},
-                                                                                    {"asin", &asin},
-                                                                                    {"atan", &atan},
-                                                                                    {"log", &log},
-                                                                                    {"log10", &log10},
-                                                                                    {"cosh", &cosh},
-                                                                                    {"sinh", &sinh},
-                                                                                    {"tanh", &tanh},
-                                                                                    {"exp", &exp},
-                                                                                    {"cbrt", &cbrt},
-                                                                                    {"tgamma", &tgamma},
-                                                                                    {"lgamma", &lgamma},
-                                                                                    {"ceil", &ceil},
-                                                                                    {"floor", &floor},
-                                                                                    {"acosh", &acosh},
-                                                                                    {"asinh", &asinh},
-                                                                                    {"trunc", &trunc},
-                                                                                    {"atanh", &atanh} };
+    static const std::unordered_map<std::string_view, double(*)(double)> unary_func_tbl{ {"sin", &sin},
+                                                                                         {"cos", &cos},
+                                                                                         {"sqrt", &sqrt},
+                                                                                         {"abs", &abs},
+                                                                                         {"tan", &tan},
+                                                                                         {"acos", &acos},
+                                                                                         {"asin", &asin},
+                                                                                         {"atan", &atan},
+                                                                                         {"log", &log},
+                                                                                         {"log10", &log10},
+                                                                                         {"cosh", &cosh},
+                                                                                         {"sinh", &sinh},
+                                                                                         {"tanh", &tanh},
+                                                                                         {"exp", &exp},
+                                                                                         {"cbrt", &cbrt},
+                                                                                         {"tgamma", &tgamma},
+                                                                                         {"lgamma", &lgamma},
+                                                                                         {"ceil", &ceil},
+                                                                                         {"floor", &floor},
+                                                                                         {"acosh", &acosh},
+                                                                                         {"asinh", &asinh},
+                                                                                         {"trunc", &trunc},
+                                                                                         {"atanh", &atanh} };
 
-    bool is_left_assoc(const std::string& str)
+    static const std::unordered_set<std::string_view> funcs{ "sin", "tan", "acos", "asin", "asin", "abs",
+                                                             "atan", "cosh", "sinh", "cos", "tanh",
+                                                             "acosh", "asinh", "atanh", "exp", "ldexp",
+                                                             "log", "log10", "sqrt", "cbrt", "tgamma",
+                                                             "lgamma", "ceil", "floor", "trunc" };
+
+    bool is_left_assoc(std::string_view str)
     {
         int id = assoc_prec.at(str).second;
         if (id == 0) return true;
@@ -86,14 +93,7 @@ namespace parser
 
     bool is_func(std::string_view str)
     {
-        if (str == "sin" || str == "tan" || str == "acos" || str == "asin" || str == "abs" || \
-            str == "atan" || str == "cosh" || str == "sinh" || str == "cos" || str == "tanh" || \
-            str == "acosh" || str == "asinh" || str == "atanh" || str == "exp" || str == "ldexp" || \
-            str == "log" || str == "log10" || str == "sqrt" || str == "cbrt" || str == "tgamma" || \
-            str == "lgamma" || str == "ceil" || str == "floor" || str == "trunc")
-        {
-            return true;
-        }
+        if (funcs.count(str) > 0) return true;
         else return false;
     }
 
@@ -120,7 +120,7 @@ namespace parser
         return true;
     }
 
-    int get_prec(const std::string& str)
+    int get_prec(std::string_view str)
     {
         if (is_func(str))
         {
