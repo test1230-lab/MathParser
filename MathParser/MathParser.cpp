@@ -12,8 +12,8 @@
 #include <variant>
 #include <chrono>
 #include <cmath>
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
-#undef main
 
 constexpr uint32_t white = 0xFFFFFFFF;
 constexpr uint32_t black = 0x00000000;
@@ -248,7 +248,6 @@ namespace parser
         else if (op == "-") return d1 - d2;
         else if (op == "/") return d1 / d2;
         else if (op == "^") return std::pow(d1, d2);
-        else throw parse_error("bad op tok attempted to be computed");
     }
 
     std::function<double(double)> build_func(const std::vector<std::variant<double, std::string>>& tokens, std::string var_name)
@@ -268,10 +267,21 @@ namespace parser
             {
                 auto right = stack.top();
                 stack.pop();
-                auto left = stack.top();
-                stack.pop();
-                auto op = std::get<std::string>(tok);
-                stack.push([left, right, op](double var_value) {return compute_binary_ops(left(var_value), right(var_value), op);});
+                if (!stack.empty())
+                {
+                    auto left = stack.top();
+                    stack.pop();
+                    auto op = std::get<std::string>(tok);
+                    stack.push([left, right, op](double var_value) {return compute_binary_ops(left(var_value), right(var_value), op);});
+                }
+                else if(std::get<std::string>(tok) == "-")
+                {
+                    stack.push([right](double var_value) {return -(right(var_value));});
+                }
+                else
+                {
+                    throw parse_error("error in build func");
+                }                
             }
             else if (is_func(std::get<std::string>(tok)))
             {
@@ -279,6 +289,10 @@ namespace parser
                 stack.pop();
                 auto func = unary_func_tbl[std::get<std::string>(tok)];
                 stack.push([operand, func](double var_value) {return func(operand(var_value));});
+            }
+            else
+            {
+                throw parse_error("error in build func");
             }
         }
         return stack.top();
@@ -297,7 +311,7 @@ namespace disp
         return result;
     }
 
-    SDL_Window* CreateCenteredWindow(uint32_t width, uint32_t height, std::string title)
+    SDL_Window* CreateCenteredWindow(uint32_t width, uint32_t height, const char* title)
     {
         // Get current device's Display Mode to calculate window position
         SDL_DisplayMode DM;
@@ -308,7 +322,7 @@ namespace disp
         const int32_t y = DM.h / 2 - height / 2;
 
         // Create the SDL window
-        SDL_Window* pWindow = SDL_CreateWindow(win_title, x, y, screen_w, screen_h,
+        SDL_Window* pWindow = SDL_CreateWindow(title, x, y, screen_w, screen_h,
             SDL_WINDOW_ALLOW_HIGHDPI);
 
         if (e(!pWindow, "Failed to create Window\n"));
@@ -342,7 +356,6 @@ namespace disp
         }
         exit(0);
     }
-
 }
 
 //from https://stackoverflow.com/a/27030598
@@ -374,15 +387,9 @@ std::vector<double> linspace(T start_in, T end_in, int num_in)
     return linspaced;
 }
 
-template<typename T>
-inline T sqr(T d)
+double dist_2d(pt_2d a, pt_2d b)
 {
-    return d * d;
-}
-
-inline double dist_2d(pt_2d a, pt_2d b)
-{
-    return std::sqrt(sqr(b.x - a.x) + sqr(b.y - a.y));
+    return std::sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
 }
 
 void create_canvas(uint32_t *data)
@@ -480,8 +487,96 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
     }
 }
 
+bool equality(double a, double b)
+{
+    return (std::abs(a - b) < DBL_EPSILON);
+}
+
+void tests()
+{
+    const std::string a = "x+2+5 + 6 + 10";
+    const std::string b = "cos( sin(tan(x)) )";
+    const std::string c = "x+ 10 *(5 +2)";
+    const std::string d = "-x + 1 - (3 + 2)";
+
+    double real = 1.0 + 2.0 + 5.0 + 6.0 + 10.0;
+    auto rpn = parser::s_yard(a, "x");
+    auto func = parser::build_func(rpn, "x");
+    if (!equality(real, func(1.0))) 
+        std::cout << "test on: " << a << " failed... " << real << " " << func(1.0) << '\n'; 
+    else
+        std::cout << "test on: " << a << " passed... " << real << " " << func(1.0) << '\n';
+
+    real = std::cos(std::sin(std::tan(1.0)));
+    rpn = parser::s_yard(b, "x");
+    func = parser::build_func(rpn, "x");
+    if (!equality(real, func(1.0))) 
+        std::cout << "test on: " << b << " failed... " << real << " " << func(1.0) << '\n'; 
+    else 
+        std::cout << "test on: " << b << " passed... " << real << " " << func(1.0) << '\n';
+
+    real = 1.0 + 10.0 * (5.0 + 2.0);
+    rpn = parser::s_yard(c, "x");
+    func = parser::build_func(rpn, "x");
+    if (!equality(real, func(1.0))) 
+        std::cout << "test on: " << c << " failed... " << real << " " << func(1.0) << '\n'; 
+    else  
+        std::cout << "test on: " << c << " passed... " << real << " " << func(1.0) << '\n'; 
+
+    real = -1.0 + 1.0 - (3.0 + 2.0);
+    rpn = parser::s_yard(d, "x");
+    func = parser::build_func(rpn, "x"); 
+    if (!equality(real, func(1.0)))
+        std::cout << "test on: " << d << " failed... " << real << " " << func(1.0) << '\n'; 
+    else  
+        std::cout << "test on: " << d << " passed... " << real << " " << func(1.0) << '\n'; 
+
+    //testing all funcs, mostly uneeded
+    for (const auto& [k, v] : parser::unary_func_tbl)
+    {
+        double test_val = 1.0;
+        //make sure the function is well defined at the input value
+        if (k == "atanh")
+        {
+            test_val = -0.5;
+        }
+      
+        const std::string s = static_cast<std::string>(k) + "(x)";
+        real = v(test_val);
+        rpn = parser::s_yard(s, "x");
+        func = parser::build_func(rpn, "x");
+        if (!equality(real, func(test_val)))
+            std::cout << "test on: " << s << " failed... " << real << " " << func(test_val) << '\n';
+        else 
+            std::cout << "test on " << s << " passed... " << real << " " << func(test_val) << '\n'; 
+    }
+
+    for (const auto& [k, v] : parser::unary_func_tbl)
+    {
+        double test_val = 1.0;
+        
+        if (k == "atanh")
+        {
+            test_val = -0.5;
+        }
+        else if (k == "acosh")
+        {
+            test_val = 2.0;
+        }
+        const std::string s = static_cast<std::string>(k) + "(x-0.001*(2 - 1))";
+        real = v(test_val - 0.001 * (2 - 1));
+        rpn = parser::s_yard(s, "x");
+        func = parser::build_func(rpn, "x");
+        if (!equality(real, func(test_val)))
+            std::cout << "test on: " << s << " failed... " << real << " " << func(test_val) << '\n';
+        else 
+            std::cout << "test on " << s << " passed... " << real << " " << func(test_val) << '\n'; 
+    }
+}
+
 int main()
 {
+    //tests();
     std::string var_name = "x";
     int range_upper = 5;
     int range_lower = -5;
@@ -496,7 +591,10 @@ int main()
     std::string in_txt;
     std::vector<std::string> eqs_on_graph;
 
-    SDL_Init(SDL_INIT_VIDEO);
+    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    {
+        throw std::runtime_error("SDL Failed to Init");
+    }
 
     pWindow = disp::CreateCenteredWindow(screen_w, screen_h, win_title);
     pRenderer = SDL_CreateRenderer(pWindow, -1, SDL_RENDERER_ACCELERATED);
@@ -506,7 +604,7 @@ int main()
     create_canvas(data);
     render(pWindow, pRenderer, pTexture, data);
 
-    std::cout << "zoom out with arrow down, zoom in with arrow up, clear with del\n";
+    std::cout << "zoom out with arrow down, zoom in with arrow up, clear with del, exit with esc\n";
 
     for(;;)
     {    
