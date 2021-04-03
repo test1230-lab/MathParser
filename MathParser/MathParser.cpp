@@ -1,11 +1,12 @@
 #include <iostream>
 #include <unordered_map>
-#include <unordered_set>
+#include <functional>
 #include <string_view>
 #include <string>
 #include <vector>
 #include <utility>
 #include <stack>
+#include <ranges>
 #include <numbers>
 #include <regex>
 #include <variant>
@@ -26,7 +27,6 @@ constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int grid_spacing = 32;
 constexpr const char* win_title = "Graphing Calc";
-constexpr const char* var_name = "x";
 
 struct pt_2d
 {
@@ -35,68 +35,59 @@ struct pt_2d
 
 namespace parser
 {
-    constexpr int LEFT_ASSOC = 0;
-    constexpr int RIGHT_ASSOC = 1;
+    enum class assoc
+    {
+        LEFT,
+        RIGHT
+    };
 
     //pair is <prec, assoc_id>
-    static const std::unordered_map<std::string_view, std::pair<int, int>> assoc_prec{ {"^", std::make_pair(4, RIGHT_ASSOC)},
-                                                                                       {"*", std::make_pair(3, LEFT_ASSOC)},
-                                                                                       {"/", std::make_pair(3, LEFT_ASSOC)},
-                                                                                       {"+", std::make_pair(2, LEFT_ASSOC)},
-                                                                                       {"-", std::make_pair(2, LEFT_ASSOC)} };
+    static std::unordered_map<std::string_view, std::pair<int, assoc>> assoc_prec{
+        {"^", {4, assoc::RIGHT}},
+        {"*", {3, assoc::LEFT}},
+        {"/", {3, assoc::LEFT}},
+        {"+", {2, assoc::LEFT}},
+        {"-", {2, assoc::LEFT}} };
 
-    static const std::unordered_map<std::string_view, double(*)(double)> unary_func_tbl{ {"sin", &sin},
-                                                                                         {"cos", &cos},
-                                                                                         {"sqrt", &sqrt},
-                                                                                         {"abs", &abs},
-                                                                                         {"tan", &tan},
-                                                                                         {"acos", &acos},
-                                                                                         {"asin", &asin},
-                                                                                         {"atan", &atan},
-                                                                                         {"log", &log},
-                                                                                         {"log10", &log10},
-                                                                                         {"cosh", &cosh},
-                                                                                         {"sinh", &sinh},
-                                                                                         {"tanh", &tanh},
-                                                                                         {"exp", &exp},
-                                                                                         {"cbrt", &cbrt},
-                                                                                         {"tgamma", &tgamma},
-                                                                                         {"lgamma", &lgamma},
-                                                                                         {"ceil", &ceil},
-                                                                                         {"floor", &floor},
-                                                                                         {"acosh", &acosh},
-                                                                                         {"asinh", &asinh},
-                                                                                         {"trunc", &trunc},
-                                                                                         {"atanh", &atanh} };
-
-    static const std::unordered_set<std::string_view> funcs{ "sin", "tan", "acos", "asin", "asin", "abs",
-                                                             "atan", "cosh", "sinh", "cos", "tanh",
-                                                             "acosh", "asinh", "atanh", "exp", "ldexp",
-                                                             "log", "log10", "sqrt", "cbrt", "tgamma",
-                                                             "lgamma", "ceil", "floor", "trunc" };
+    static std::unordered_map<std::string_view, double(*)(double)> unary_func_tbl{ 
+        {"sin", std::sin},
+        {"cos", std::cos},
+        {"sqrt", std::sqrt},
+        {"abs", std::fabs},
+        {"tan", std::tan},
+        {"acos", std::acos},
+        {"asin", std::asin},
+        {"atan", std::atan},
+        {"log", std::log},
+        {"log10", std::log10},
+        {"cosh", std::cosh},
+        {"sinh", std::sinh},
+        {"tanh", std::tanh},
+        {"exp", std::exp},
+        {"cbrt", std::cbrt},
+        {"tgamma", std::tgamma},
+        {"lgamma", std::lgamma},
+        {"ceil", std::ceil},
+        {"floor", std::floor},
+        {"acosh", std::acosh},
+        {"asinh", std::asinh},
+        {"trunc", std::trunc},
+        {"atanh", std::atanh} };
 
     bool is_left_assoc(std::string_view str)
     {
-        int id = assoc_prec.at(str).second;
-        if (id == 0) return true;
-        else return false;
+        return assoc_prec[str].second == assoc::LEFT;
     }
 
     bool is_binary_op(std::string_view str)
     {
-        if (str == "/" || str == "*" || str == "+" || str == "-" || str == "^")
-        {
-            return true;
-        }
-        else return false;
+        return (str == "/" || str == "*" || str == "+" || str == "-" || str == "^");
     }
 
     bool is_func(std::string_view str)
     {
-        if (funcs.count(str) > 0) return true;
-        else return false;
+        return unary_func_tbl.contains(str);
     }
-
 
     //handls decimal numbers
     bool is_num(std::string_view str)
@@ -106,7 +97,7 @@ namespace parser
         {
             if (c == '.')
             {
-                num_found_periods++;
+                ++num_found_periods;
                 if (num_found_periods > 1)
                 {
                     return false;
@@ -122,32 +113,31 @@ namespace parser
 
     int get_prec(std::string_view str)
     {
-        if (is_func(str))
-        {
-            return 1; //TODO: check it this is the correct value
-        }
-        else if (is_binary_op(str))
-        {
-            return assoc_prec.at(str).first;
-        }
-        else
-        {
-            return 0;
-        }
+        if (is_func(str)) { return 1; } //TODO: check it this is the correct value
+        else if (is_binary_op(str)) { return assoc_prec[str].first; }
+        else { return 0; }
     }
 
-    
-    //from https://stackoverflow.com/a/56204256
-    //modified regex expr
-    std::vector<std::string> tokenize(const std::string& str)
+    static const std::string get_regex(std::string var_name) 
+    {
+        auto func_names{ std::views::keys(unary_func_tbl) };
+        std::ostringstream os;
+        os << "(";
+        for (const auto& name : std::views::keys(unary_func_tbl)) 
+        {
+            os << name << "|";
+        }
+        os << var_name << "|"; //global constant for the variable name
+        os << R"(e|pi)|)" //eulers constant and pi
+           << R"(([0-9]+[.])?[0-9]+|[-+\()/*^])";
+        return os.str();
+    }
+
+    std::vector<std::string> tokenize(const std::string& str, std::string var_name)
     {
         std::vector<std::string> res;
-        const std::regex words_regex("(sin|tan|acos|asin|abs|atan|cosh|sinh|cos|"
-                                     "tanh|acosh|asinh|atanh|exp|ldexp|log|log10|"
-                                     "sqrt|cbrt|tgamma|lgamma|ceil|floor|x|e)|^-|[0-9]?"
-                                     "([0-9]*[.])?[0-9]+|[\\-\\+\\\\\(\\)\\/\\*\\^\\]",
-                                      std::regex_constants::egrep);
-
+        const std::regex words_regex(get_regex(var_name), std::regex_constants::egrep);
+         
         auto words_begin = std::sregex_iterator(str.begin(), str.end(), words_regex);
         auto words_end = std::sregex_iterator();
         for (std::sregex_iterator i = words_begin; i != words_end; ++i) 
@@ -156,6 +146,12 @@ namespace parser
         }
         return res;
     }
+
+    class parse_error : public std::runtime_error {
+    public:
+        explicit parse_error(const std::string& what) : std::runtime_error(what) {}
+        explicit parse_error(const char* what) : std::runtime_error(what) {}
+    };
 
     //params: 
     //str - string to be converted
@@ -167,11 +163,11 @@ namespace parser
         std::vector<std::variant<double, std::string>> output_queue;
         std::stack<std::string> op_stack;
 
-        for (const auto& tok : tokenize(str))
+        for (const auto& tok : tokenize(str, var_name))
         {
             if (tok == "pi")
             {
-                output_queue.push_back(std::numbers::pi_v<double>);
+                output_queue.push_back(std::numbers::pi);
             }
             else if (tok == "e")
             {
@@ -183,7 +179,7 @@ namespace parser
             }
             else if (is_num(tok))
             {
-                output_queue.push_back(strtod(tok.c_str(), NULL));
+                output_queue.push_back(strtod(tok.c_str(), nullptr));
             }
             else if (is_func(tok))
             {
@@ -191,9 +187,9 @@ namespace parser
             }
             else if (is_binary_op(tok))
             {   
-                while (!op_stack.empty() && \
-                      (is_binary_op(op_stack.top()) && get_prec(op_stack.top()) > (get_prec(tok)) || \
-                      (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok))) && \
+                while (!op_stack.empty() &&
+                      (is_binary_op(op_stack.top()) && get_prec(op_stack.top()) > get_prec(tok) ||
+                      (get_prec(op_stack.top()) == get_prec(tok) && is_left_assoc(tok))) &&
                       (op_stack.top() != "("))
                 {
                     //pop operators from stack to queue
@@ -226,6 +222,10 @@ namespace parser
                     op_stack.pop();
                 }
             }
+            else
+            {
+                throw parse_error("unknown token:" + tok);
+            }
         }
         //all tokens read
         while (!op_stack.empty())
@@ -233,7 +233,7 @@ namespace parser
             //there are mismatched parentheses
             if (op_stack.top() == "(" || op_stack.top() == ")")
             {
-                std::cout << "mismatched parentheses\n";
+                throw parse_error("mismatched parentheses");
             }
             output_queue.push_back(op_stack.top());
             op_stack.pop();
@@ -247,67 +247,41 @@ namespace parser
         else if (op == "+") return d1 + d2;
         else if (op == "-") return d1 - d2;
         else if (op == "/") return d1 / d2;
-        else if (op == "^") return pow(d1, d2);
-        else
-        {
-            std::cout << R"(invalid operator: ")" << op << R"("  passed to func "compute_binary_ops")" << '\n';
-            exit(-1);
-        }
+        else if (op == "^") return std::pow(d1, d2);
+        else throw parse_error("bad op tok attempted to be computed");
     }
 
-    double eval_rpn(const std::vector<std::variant<double, std::string>>& tokens, std::string var_name, double var_value)
-    {   
-        double d2 = 0.0;
-        double res = 0.0;
-        std::stack<std::variant<double, std::string>> stack;
+    std::function<double(double)> build_func(const std::vector<std::variant<double, std::string>>& tokens, std::string var_name)
+    {
+        std::stack<std::function<double(double)>> stack;
         for (const auto& tok : tokens)
         {
-            if (const double *number = std::get_if<double>(&tok))
+            if (const double* num_ptr = std::get_if<double>(&tok))
             {
-                stack.push(*number);
+                stack.push([number = *num_ptr](double){ return number; });
             }
             else if (std::get<std::string>(tok) == var_name)
             {
-                stack.push(var_value);
+                stack.push([](double var_value) {return var_value;});
             }
-            //handle binary operaters
-            else if(is_binary_op(std::get<std::string>(tok)))
+            else if (is_binary_op(std::get<std::string>(tok)))
             {
-                d2 = std::get<double>(stack.top());
+                auto right = stack.top();
                 stack.pop();
-                if (!stack.empty())
-                {       
-                    const double d1 = std::get<double>(stack.top());
-                    stack.pop();
-                    res = compute_binary_ops(d1, d2, std::get<std::string>(tok));
-                    stack.push(res);
-                }
-                else
-                {
-                    if (std::get<std::string>(tok) == "-") res = -(d2);
-                    else res = d2;
-                    stack.push(res);
-                }
+                auto left = stack.top();
+                stack.pop();
+                auto op = std::get<std::string>(tok);
+                stack.push([left, right, op](double var_value) {return compute_binary_ops(left(var_value), right(var_value), op);});
             }
-            //handle funcs(unary ops)
             else if (is_func(std::get<std::string>(tok)))
             {
-                if (!stack.empty())
-                {
-                    const double d1 = std::get<double>(stack.top());
-                    stack.pop();
-                    res = (*unary_func_tbl.at(std::get<std::string>(tok)))(d1);
-                    stack.push(res);
-                }
-                else
-                {
-                    if (std::get<std::string>(tok) == "-") res = -(d2);
-                    else res = d2;
-                    stack.push(res);
-                }
+                auto operand = stack.top();
+                stack.pop();
+                auto func = unary_func_tbl[std::get<std::string>(tok)];
+                stack.push([operand, func](double var_value) {return func(operand(var_value));});
             }
         }
-        return std::get<double>(stack.top());
+        return stack.top();
     }
 }
 
@@ -315,7 +289,7 @@ namespace parser
 namespace disp
 {
     constexpr int32_t g_kRenderDeviceFlags = -1;
-    constexpr  int32_t g_kErrorOccurred = -1;
+    constexpr int32_t g_kErrorOccurred = -1;
 
     int32_t e(int32_t result, std::string errorMessage)
     {
@@ -406,9 +380,9 @@ inline T sqr(T d)
     return d * d;
 }
 
-inline double dist_2d(const pt_2d& a, const pt_2d& b)
+inline double dist_2d(pt_2d a, pt_2d b)
 {
-    return sqrt(sqr(b.x - a.x) + sqr(b.y - a.y));
+    return std::sqrt(sqr(b.x - a.x) + sqr(b.y - a.y));
 }
 
 void create_canvas(uint32_t *data)
@@ -442,9 +416,9 @@ void create_canvas(uint32_t *data)
     }   
 }
 
-void fill_gaps(uint32_t* data, const pt_2d& a, const pt_2d& b, int max)
+void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
 {
-    double dist = dist_2d(a, b);
+    const double dist = dist_2d(a, b);
     if (dist > 2 && dist < max)
     {
         std::vector<double> xvec = linspace(a.x, b.x, static_cast<int>(dist) + 1);
@@ -461,16 +435,16 @@ void fill_gaps(uint32_t* data, const pt_2d& a, const pt_2d& b, int max)
     }
 }
 
-void plot(uint32_t* data, int range_lower, int range_upper, std::vector<std::variant<double, std::string>>& rpn, std::string var_name, float pt_step_count, int max)
+void plot(uint32_t* data, int range_lower, int range_upper, std::function<double(double)> func, std::string var_name, float pt_step_count, int max)
 {
     const int ratio = screen_w / range_upper;
     int lst_ix = 0;
     int lst_iy = 0;
-
+    
     for (int x = (range_lower * pt_step_count); x < (range_upper * pt_step_count); x++)
     {
-        double tx = x / pt_step_count;
-        double ty = parser::eval_rpn(rpn, var_name, tx);
+        double tx = x / pt_step_count;       
+        double ty = func(tx);
 
         tx *= (screen_w / static_cast<double>(range_upper));
         ty *= (screen_w / static_cast<double>(range_upper));
@@ -508,6 +482,7 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
 
 int main()
 {
+    std::string var_name = "x";
     int range_upper = 5;
     int range_lower = -5;
     int max = 125;
@@ -568,12 +543,12 @@ int main()
                 {
                     if ((range_upper - 1) > 0 && (range_lower + 1) < 0)
                     {
-                        range_lower++;
-                        range_upper--;
+                        ++range_lower;
+                        --range_upper;
                     }
                     
                     pt_step_count += 2;
-                    max--;
+                    ++max;
                     if (pt_step_count >= 1000)
                     {
                         pt_step_count = 1000;
@@ -590,7 +565,8 @@ int main()
                         for (const std::string& last_txt : eqs_on_graph)
                         {
                             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(last_txt, var_name);
-                            plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);                   
+                            auto func = parser::build_func(rpn, var_name);
+                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);                   
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
@@ -601,9 +577,9 @@ int main()
                 //zoom out
                 else if (e.key.keysym.sym == SDLK_DOWN)
                 {
-                    range_lower--;
-                    range_upper++;
-                    max++;
+                    --range_lower;
+                    ++range_upper;
+                    ++max;
                     pt_step_count -= 2;
                     if (pt_step_count <= 200)
                     {
@@ -621,7 +597,8 @@ int main()
                         for (const std::string& last_txt : eqs_on_graph)
                         {
                             std::vector<std::variant<double, std::string>>rpn = parser::s_yard(last_txt, var_name);
-                            plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);    
+                            auto func = parser::build_func(rpn, var_name);
+                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);    
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
@@ -631,7 +608,7 @@ int main()
                 }
                 else if (e.key.keysym.sym == SDLK_BACKSPACE) 
                 {
-                    if (in_txt.size() > 0) 
+                    if (!in_txt.empty()) 
                     {                          
                         in_txt.erase(in_txt.size() - 1);                           
                         std::cout << in_txt << std::string(in_txt.size() + 1, ' ') << '\r';
@@ -654,13 +631,15 @@ int main()
         if (!first_iter && !in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1))
         {
             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
-            plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);
+            auto func = parser::build_func(rpn, var_name);
+            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
             render(pWindow, pRenderer, pTexture, data);
         }
         else if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1)) 
         {
             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
-            plot(data, range_lower, range_upper, rpn, var_name, pt_step_count, max);
+            auto func = parser::build_func(rpn, var_name);
+            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
             render(pWindow, pRenderer, pTexture, data);
             first_iter = false;
         }       
