@@ -127,7 +127,7 @@ namespace parser
         {
             os << name << "|";
         }
-        os << var_name << "|"; //global constant for the variable name
+        os << var_name << "|";
         os << R"(e|pi)|)" //eulers constant and pi
            << R"(([0-9]+[.])?[0-9]+|[-+\()/*^])";
         return os.str();
