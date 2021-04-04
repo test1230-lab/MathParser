@@ -103,7 +103,7 @@ namespace parser
                     return false;
                 }
             }
-            if (!isdigit(c) && c != '.')
+            if (!std::isdigit(c) && c != '.')
             {
                 return false;
             }
@@ -577,12 +577,11 @@ void tests()
 int main()
 {
     //tests();
-    std::string var_name = "x";
+    const std::string var_name = "x";
     int range_upper = 5;
     int range_lower = -5;
     int max = 125;
     float pt_step_count = 1000;
-    bool first_iter = true;
     SDL_Event e;
     uint32_t* data = new uint32_t[screen_w * screen_h];
     SDL_Window* pWindow = nullptr;
@@ -726,20 +725,12 @@ int main()
         eqs_on_graph.push_back(in_txt);
 
         //wont evaluate as true if the input is one letter and not var name
-        if (!first_iter && !in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1))
+        if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1))
         {
             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
             auto func = parser::build_func(rpn, var_name);
             plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
             render(pWindow, pRenderer, pTexture, data);
-        }
-        else if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1)) 
-        {
-            std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
-            auto func = parser::build_func(rpn, var_name);
-            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
-            render(pWindow, pRenderer, pTexture, data);
-            first_iter = false;
         }       
     }   
     return 0;
