@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <functional>
 #include <string_view>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <utility>
@@ -477,12 +478,12 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
 {
     int32_t pitch = 0;
     uint32_t* pPixelBuffer = nullptr;
-    if (!SDL_LockTexture(pTexture, NULL, (void**)&pPixelBuffer, &pitch))
+    if (!SDL_LockTexture(pTexture, nullptr, (void**)(&pPixelBuffer), &pitch))
     {
         pitch /= sizeof(uint32_t);
         memcpy(pPixelBuffer, data, screen_h * static_cast<size_t>(pitch) * sizeof(uint32_t));
         SDL_UnlockTexture(pTexture);
-        SDL_RenderCopy(pRenderer, pTexture, NULL, NULL);
+        SDL_RenderCopy(pRenderer, pTexture, nullptr, nullptr);
         SDL_RenderPresent(pRenderer);
     }
 }
@@ -605,23 +606,23 @@ int main()
 
     std::cout << "zoom out with arrow down, zoom in with arrow up, clear with del, exit with esc\n";
 
-    for(;;)
-    {    
+    for (;;)
+    {
         in_txt.clear();
-        while (SDL_WaitEvent(&e)) 
-        {
-            if (e.type == SDL_QUIT) 
+        while (SDL_WaitEvent(&e))
+        {       
+            if (e.type == SDL_QUIT)
             {
                 disp::Shutdown(&pWindow, &pRenderer, &pTexture);
             }
-            else if (e.type == SDL_TEXTINPUT) 
+            else if (e.type == SDL_TEXTINPUT)
             {
                 in_txt.append(e.text.text);
-                std::cout << in_txt << '\r';              
+                std::cout << in_txt << '\r';
             }
-            else if (e.type == SDL_KEYDOWN) 
+            else if (e.type == SDL_KEYDOWN)
             {
-                if (e.key.keysym.sym == SDLK_ESCAPE) 
+                if (e.key.keysym.sym == SDLK_ESCAPE)
                 {
                     disp::Shutdown(&pWindow, &pRenderer, &pTexture);
                 }
@@ -643,7 +644,7 @@ int main()
                         ++range_lower;
                         --range_upper;
                     }
-                    
+
                     pt_step_count += 2;
                     ++max;
                     if (pt_step_count >= 1000)
@@ -663,7 +664,7 @@ int main()
                         {
                             std::vector<std::variant<double, std::string>> rpn = parser::s_yard(last_txt, var_name);
                             auto func = parser::build_func(rpn, var_name);
-                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);                   
+                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
@@ -695,7 +696,7 @@ int main()
                         {
                             std::vector<std::variant<double, std::string>>rpn = parser::s_yard(last_txt, var_name);
                             auto func = parser::build_func(rpn, var_name);
-                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);    
+                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
@@ -703,23 +704,23 @@ int main()
                     std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
                     continue;
                 }
-                else if (e.key.keysym.sym == SDLK_BACKSPACE) 
+                else if (e.key.keysym.sym == SDLK_BACKSPACE)
                 {
-                    if (!in_txt.empty()) 
-                    {                          
-                        in_txt.erase(in_txt.size() - 1);                           
+                    if (!in_txt.empty())
+                    {
+                        in_txt.erase(in_txt.size() - 1);
                         std::cout << in_txt << std::string(in_txt.size() + 1, ' ') << '\r';
                     }
                 }
             }
-            else if (e.type == SDL_KEYUP) 
+            else if (e.type == SDL_KEYUP)
             {
                 if (e.key.keysym.sym == SDLK_RETURN)
                 {
                     std::cout << '\n';
                     break;
                 }
-            }
+            }            
         }
 
         eqs_on_graph.push_back(in_txt);
@@ -731,7 +732,7 @@ int main()
             auto func = parser::build_func(rpn, var_name);
             plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
             render(pWindow, pRenderer, pTexture, data);
-        }       
-    }   
+        }
+    }
     return 0;
 }
