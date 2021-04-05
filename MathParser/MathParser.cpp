@@ -129,8 +129,8 @@ namespace parser
             os << name << "|";
         }
         os << var_name << "|";
-        os << R"(e|pi)|)" //eulers constant and pi
-           << R"(([0-9]+[.])?[0-9]+|[-+\()/*^])";
+        os << R"(e|pi)|)";
+        os << R"(([0-9]+[.])?[0-9]+|[-+\()/*^])";
         return os.str();
     }
 
@@ -278,11 +278,7 @@ namespace parser
                 else if(std::get<std::string>(tok) == "-")
                 {
                     stack.push([right](double var_value) {return -(right(var_value));});
-                }
-                else
-                {
-                    throw parse_error("error in build func");
-                }                
+                }         
             }
             else if (is_func(std::get<std::string>(tok)))
             {
@@ -290,10 +286,6 @@ namespace parser
                 stack.pop();
                 auto func = unary_func_tbl[std::get<std::string>(tok)];
                 stack.push([operand, func](double var_value) {return func(operand(var_value));});
-            }
-            else
-            {
-                throw parse_error("error in build func");
             }
         }
         return stack.top();
@@ -589,7 +581,7 @@ int main()
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
     std::string in_txt;
-    std::vector<std::string> eqs_on_graph;
+    std::vector<std::function<double(double)>> eqs_on_graph;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
@@ -660,10 +652,8 @@ int main()
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
                         create_canvas(data);
-                        for (const std::string& last_txt : eqs_on_graph)
+                        for (const auto& func : eqs_on_graph)
                         {
-                            std::vector<std::variant<double, std::string>> rpn = parser::s_yard(last_txt, var_name);
-                            auto func = parser::build_func(rpn, var_name);
                             plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
                         }
                         render(pWindow, pRenderer, pTexture, data);
@@ -692,10 +682,8 @@ int main()
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
                         create_canvas(data);
-                        for (const std::string& last_txt : eqs_on_graph)
+                        for (const auto& func : eqs_on_graph)
                         {
-                            std::vector<std::variant<double, std::string>>rpn = parser::s_yard(last_txt, var_name);
-                            auto func = parser::build_func(rpn, var_name);
                             plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
                         }
                         render(pWindow, pRenderer, pTexture, data);
@@ -723,15 +711,14 @@ int main()
             }            
         }
 
-        eqs_on_graph.push_back(in_txt);
-
         //wont evaluate as true if the input is one letter and not var name
         if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1))
         {
-            std::vector<std::variant<double, std::string>> rpn = parser::s_yard(in_txt, var_name);
+            std::vector<std::variant<double, std::string>>rpn = parser::s_yard(in_txt, var_name);
             auto func = parser::build_func(rpn, var_name);
             plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
             render(pWindow, pRenderer, pTexture, data);
+            eqs_on_graph.push_back(func);
         }
     }
     return 0;
