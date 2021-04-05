@@ -433,8 +433,8 @@ void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
         std::vector<double> yvec = linspace(a.y, b.y, static_cast<int>(dist) + 1);
         for (int i = 0; i < xvec.size(); i++)
         {
-            int ix = static_cast<int>(round(xvec[i]));
-            int iy = static_cast<int>(round(yvec[i]));
+            int ix = round(xvec[i]);
+            int iy = round(yvec[i]);
             if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
             {
                 data[ix + (iy * screen_w)] = yellow;
