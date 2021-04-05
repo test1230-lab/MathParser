@@ -112,6 +112,31 @@ namespace parser
         return true;
     }
 
+    bool check_num_parentheses(std::string_view str)
+    {
+        int left_count = 0;
+        int right_count = 0;
+        for (const auto c : str)
+        {
+            if (c == '(')
+            {
+                ++left_count;
+            }
+            else if (c == ')')
+            {
+                ++right_count;
+            }
+        }
+        return left_count == right_count;
+    }
+
+    class parse_error : public std::runtime_error 
+    {
+        public:
+            explicit parse_error(const std::string& what) : std::runtime_error(what) {}
+            explicit parse_error(const char* what) : std::runtime_error(what) {}
+    };
+
     int get_prec(std::string_view str)
     {
         if (is_func(str)) { return 1; } //TODO: check it this is the correct value
@@ -134,9 +159,15 @@ namespace parser
         return os.str();
     }
 
-    std::vector<std::string> tokenize(const std::string& str, std::string var_name)
+    std::vector<std::string> tokenize(std::string str, std::string var_name)
     {
+        if (!check_num_parentheses(str))
+        {
+            throw parse_error("parenthesis issue");
+        }
+
         std::vector<std::string> res;
+        std::string test;
         const std::regex words_regex(get_regex(var_name), std::regex_constants::egrep);
          
         auto words_begin = std::sregex_iterator(str.begin(), str.end(), words_regex);
@@ -144,15 +175,17 @@ namespace parser
         for (std::sregex_iterator i = words_begin; i != words_end; ++i) 
         {
             res.push_back((*i).str());
+            test += (*i).str();
+        }
+        //this will find all unknown tokens, therefor the rest of 
+        //the parser will assume all tokens are valid
+        std::erase(str, ' ');
+        if (test != str)
+        {
+            throw parse_error("unknown token in input"); 
         }
         return res;
     }
-
-    class parse_error : public std::runtime_error {
-    public:
-        explicit parse_error(const std::string& what) : std::runtime_error(what) {}
-        explicit parse_error(const char* what) : std::runtime_error(what) {}
-    };
 
     //params: 
     //str - string to be converted
@@ -164,7 +197,8 @@ namespace parser
         std::vector<std::variant<double, std::string>> output_queue;
         std::stack<std::string> op_stack;
 
-        for (const auto& tok : tokenize(str, var_name))
+        //tokenize function should handle all bad tokens
+        for (const auto& tok : tokenize(str, var_name)) 
         {
             if (tok == "pi")
             {
@@ -222,10 +256,6 @@ namespace parser
                     output_queue.push_back(op_stack.top());
                     op_stack.pop();
                 }
-            }
-            else
-            {
-                throw parse_error("unknown token:" + tok);
             }
         }
         //all tokens read
@@ -570,11 +600,12 @@ void tests()
 int main()
 {
     //tests();
+    bool clr_ln = false;
     const std::string var_name = "x";
     int range_upper = 5;
     int range_lower = -5;
     int max = 125;
-    float pt_step_count = 1000;
+    float pt_step_count = 500;
     SDL_Event e;
     uint32_t* data = new uint32_t[screen_w * screen_h];
     SDL_Window* pWindow = nullptr;
@@ -596,7 +627,7 @@ int main()
     create_canvas(data);
     render(pWindow, pRenderer, pTexture, data);
 
-    std::cout << "zoom out with arrow down, zoom in with arrow up, clear with del, exit with esc\n";
+    std::cout << "zoom out with arrow down, zoom in with arrow up, reset with del, exit with esc\n";
 
     for (;;)
     {
@@ -605,20 +636,27 @@ int main()
         {       
             if (e.type == SDL_QUIT)
             {
-                disp::Shutdown(&pWindow, &pRenderer, &pTexture);
+                delete[] data;
+                disp::Shutdown(&pWindow, &pRenderer, &pTexture);          
             }
             else if (e.type == SDL_TEXTINPUT)
             {
+                if (clr_ln)
+                {
+                    std::cout << std::string(22, ' ') << '\r';
+                }
                 in_txt.append(e.text.text);
                 std::cout << in_txt << '\r';
+                clr_ln = false;
             }
             else if (e.type == SDL_KEYDOWN)
             {
                 if (e.key.keysym.sym == SDLK_ESCAPE)
                 {
+                    delete[] data;
                     disp::Shutdown(&pWindow, &pRenderer, &pTexture);
                 }
-                //clear
+                //reset graph(default zoom, other params, clear)
                 else if (e.key.keysym.sym == SDLK_DELETE)
                 {
                     eqs_on_graph.clear();
@@ -626,6 +664,11 @@ int main()
                     memset(data, black, screen_w * screen_h * sizeof(uint32_t));
                     create_canvas(data);
                     render(pWindow, pRenderer, pTexture, data);
+                    range_upper = 5;
+                    range_lower = -5;
+                    max = 125;
+                    pt_step_count = 1000;
+                    std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
                     continue;
                 }
                 //zoom in
@@ -638,7 +681,7 @@ int main()
                     }
 
                     pt_step_count += 2;
-                    ++max;
+                    --max;
                     if (pt_step_count >= 1000)
                     {
                         pt_step_count = 1000;
@@ -658,8 +701,9 @@ int main()
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
-                    std::cout << std::string(20, ' ') << '\r';
+                    std::cout << std::string(22, ' ') << '\r';
                     std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
+                    clr_ln = true;
                     continue;
                 }
                 //zoom out
@@ -688,15 +732,16 @@ int main()
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
-                    std::cout << std::string(20, ' ') << '\r';
+                    std::cout << std::string(22, ' ') << '\r';
                     std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
+                    clr_ln = true;
                     continue;
                 }
                 else if (e.key.keysym.sym == SDLK_BACKSPACE)
                 {
                     if (!in_txt.empty())
                     {
-                        in_txt.erase(in_txt.size() - 1);
+                        in_txt.pop_back();
                         std::cout << in_txt << std::string(in_txt.size() + 1, ' ') << '\r';
                     }
                 }
@@ -708,17 +753,24 @@ int main()
                     std::cout << '\n';
                     break;
                 }
-            }            
+            }             
         }
 
         //wont evaluate as true if the input is one letter and not var name
         if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1))
         {
-            std::vector<std::variant<double, std::string>>rpn = parser::s_yard(in_txt, var_name);
-            auto func = parser::build_func(rpn, var_name);
-            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
-            render(pWindow, pRenderer, pTexture, data);
-            eqs_on_graph.push_back(func);
+            try
+            {
+                std::vector<std::variant<double, std::string>>rpn = parser::s_yard(in_txt, var_name);
+                auto func = parser::build_func(rpn, var_name);
+                plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
+                render(pWindow, pRenderer, pTexture, data);
+                eqs_on_graph.push_back(func);
+            }
+            catch (const parser::parse_error& exc)
+            {
+                std::cerr << exc.what() << '\n';
+            }            
         }
     }
     return 0;
