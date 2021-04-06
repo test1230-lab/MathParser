@@ -3,6 +3,7 @@
 #include <functional>
 #include <string_view>
 #include <algorithm>
+#include <limits>
 #include <string>
 #include <vector>
 #include <utility>
@@ -90,7 +91,7 @@ namespace parser
         return unary_func_tbl.contains(str);
     }
 
-    //handls decimal numbers
+    //checks if the str is a number, handles decimal numbers
     bool is_num(std::string_view str)
     {
         int num_found_periods = 0;
@@ -112,6 +113,9 @@ namespace parser
         return true;
     }
 
+    //checks if the number of ")" and "(" are the same
+    //this is better than the std algo because it
+    //only walks the str once
     bool check_num_parentheses(std::string_view str)
     {
         int left_count = 0;
@@ -144,6 +148,7 @@ namespace parser
         else { return 0; }
     }
 
+    //create regex string partially from func table
     static const std::string get_regex(std::string var_name) 
     {
         auto func_names{ std::views::keys(unary_func_tbl) };
@@ -153,12 +158,14 @@ namespace parser
         {
             os << name << "|";
         }
-        os << var_name << "|";
-        os << R"(e|pi)|)";
-        os << R"(([0-9]+[.])?[0-9]+|[-+\()/*^])";
+        os << var_name << "|"
+           << R"(e|pi)|)"
+           << R"(([0-9]+[.])?[0-9]+|[-+\()/*^])";
         return os.str();
     }
 
+    //passing by value so we can modify the copy
+    //tokenize using regex
     std::vector<std::string> tokenize(std::string str, std::string var_name)
     {
         if (!check_num_parentheses(str))
@@ -257,6 +264,10 @@ namespace parser
                     op_stack.pop();
                 }
             }
+            else
+            {
+                throw parse_error("unknown token: " + tok);
+            }
         }
         //all tokens read
         while (!op_stack.empty())
@@ -281,6 +292,9 @@ namespace parser
         else if (op == "^") return std::pow(d1, d2);
     }
 
+    //creates function that fully represents the rpn vec that is passed
+    //this can be optimized by reducing uneeded functions
+    //eg 1 + 1 + 2 could just be 4
     std::function<double(double)> build_func(const std::vector<std::variant<double, std::string>>& tokens, std::string var_name)
     {
         std::stack<std::function<double(double)>> stack;
@@ -288,7 +302,7 @@ namespace parser
         {
             if (const double* num_ptr = std::get_if<double>(&tok))
             {
-                stack.push([number = *num_ptr](double){ return number; });
+                stack.push([number = *num_ptr](double){return number;});
             }
             else if (std::get<std::string>(tok) == var_name)
             {
@@ -305,6 +319,7 @@ namespace parser
                     auto op = std::get<std::string>(tok);
                     stack.push([left, right, op](double var_value) {return compute_binary_ops(left(var_value), right(var_value), op);});
                 }
+                //if unary minus
                 else if(std::get<std::string>(tok) == "-")
                 {
                     stack.push([right](double var_value) {return -(right(var_value));});
@@ -415,6 +430,8 @@ double dist_2d(pt_2d a, pt_2d b)
     return std::sqrt((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
 }
 
+//creates the grid and axis
+//uses global constants to deduce array size
 void create_canvas(uint32_t *data)
 {
     //create grid  
@@ -446,6 +463,7 @@ void create_canvas(uint32_t *data)
     }   
 }
 
+//fills the gap between two points with a line
 void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
 {
     const double dist = dist_2d(a, b);
@@ -465,7 +483,8 @@ void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
     }
 }
 
-void plot(uint32_t* data, int range_lower, int range_upper, std::function<double(double)> func, std::string var_name, float pt_step_count, int max)
+//plot the function across the range lower to upper
+void plot(uint32_t* data, int range_lower, int range_upper, std::function<double(double)> func, std::string_view var_name, float pt_step_count, int max)
 {
     const int ratio = screen_w / range_upper;
     int lst_ix = 0;
@@ -496,6 +515,14 @@ void plot(uint32_t* data, int range_lower, int range_upper, std::function<double
     }
 }
 
+/* 
+  Renders Pixel Buffer
+  params:
+  sdl window
+  sdl renderer
+  sdl texture
+  uint32 1d pixel buffer
+*/
 void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture, uint32_t* data)
 {
     int32_t pitch = 0;
@@ -512,7 +539,7 @@ void render(SDL_Window* pWindow, SDL_Renderer* pRenderer, SDL_Texture* pTexture,
 
 bool equality(double a, double b)
 {
-    return (std::abs(a - b) < DBL_EPSILON);
+    return (std::abs(a - b) < std::numeric_limits<double>::epsilon());
 }
 
 void tests()
@@ -554,7 +581,7 @@ void tests()
     else  
         std::cout << "test on: " << d << " passed... " << real << " " << func(1.0) << '\n'; 
 
-    //testing all funcs, mostly uneeded
+    //testing all funcs from the table, mostly uneeded
     for (const auto& [k, v] : parser::unary_func_tbl)
     {
         double test_val = 1.0;
@@ -613,11 +640,12 @@ int main()
     SDL_Texture* pTexture = nullptr;
     std::string in_txt;
     std::vector<std::function<double(double)>> eqs_on_graph;
-    std::vector<std::string> eqs;
+    std::vector<std::string> eqs; //store input strings, so we can check for dupes
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
-        throw std::runtime_error("SDL Failed to Init");
+        delete[] data;
+        throw std::runtime_error("SDL Failed to Init"); //this will terminate the program
     }
 
     pWindow = disp::CreateCenteredWindow(screen_w, screen_h, win_title);
@@ -660,6 +688,7 @@ int main()
                 //reset graph(default zoom, other params, clear)
                 else if (e.key.keysym.sym == SDLK_DELETE)
                 {
+                    eqs.clear();
                     eqs_on_graph.clear();
                     std::cout << "\033[2J" << "\033[1;1H";
                     memset(data, black, screen_w * screen_h * sizeof(uint32_t));
@@ -702,8 +731,7 @@ int main()
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
-                    std::cout << std::string(22, ' ') << '\r';
-                    std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
+                    std::cout << "range: " << range_lower << " to: " << range_upper << "    " <<'\r';
                     clr_ln = true;
                     continue;
                 }
@@ -733,17 +761,17 @@ int main()
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
-                    std::cout << std::string(22, ' ') << '\r';
-                    std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
+                    std::cout << "range: " << range_lower << " to: " << range_upper << "    " << '\r';
                     clr_ln = true;
                     continue;
                 }
+                //delete last char from in_txt
                 else if (e.key.keysym.sym == SDLK_BACKSPACE)
                 {
                     if (!in_txt.empty())
                     {
                         in_txt.pop_back();
-                        std::cout << in_txt << std::string(in_txt.size() + 1, ' ') << '\r';
+                        std::cout << in_txt << ' ' << '\r';
                     }
                 }
             }
@@ -757,12 +785,11 @@ int main()
             }             
         }
 
-        //wont evaluate as true if the input is one letter and not var name
-        if (!in_txt.empty() && !(in_txt != var_name && in_txt.size() == 1))
+        if (!in_txt.empty())
         {
             try
             {
-                std::vector<std::variant<double, std::string>>rpn = parser::s_yard(in_txt, var_name);
+                auto rpn = parser::s_yard(in_txt, var_name); //will throw if there is bad input
                 auto func = parser::build_func(rpn, var_name);
                 
                 //if eq is not already on graph
@@ -780,5 +807,4 @@ int main()
             }            
         }
     }
-    return 0;
 }
