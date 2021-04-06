@@ -51,29 +51,29 @@ namespace parser
         {"-", {2, assoc::LEFT}} };
 
     static std::unordered_map<std::string_view, double(*)(double)> unary_func_tbl{ 
-        {"sin", std::sin},
-        {"cos", std::cos},
-        {"sqrt", std::sqrt},
-        {"abs", std::fabs},
-        {"tan", std::tan},
-        {"acos", std::acos},
-        {"asin", std::asin},
-        {"atan", std::atan},
-        {"log", std::log},
-        {"log10", std::log10},
-        {"cosh", std::cosh},
-        {"sinh", std::sinh},
-        {"tanh", std::tanh},
-        {"exp", std::exp},
-        {"cbrt", std::cbrt},
-        {"tgamma", std::tgamma},
-        {"lgamma", std::lgamma},
-        {"ceil", std::ceil},
-        {"floor", std::floor},
-        {"acosh", std::acosh},
-        {"asinh", std::asinh},
-        {"trunc", std::trunc},
-        {"atanh", std::atanh} };
+            {"sin", std::sin},
+            {"cos", std::cos},
+            {"sqrt", std::sqrt},
+            {"abs", std::fabs},
+            {"tan", std::tan},
+            {"acos", std::acos},
+            {"asin", std::asin},
+            {"atan", std::atan},
+            {"log", std::log},
+            {"log10", std::log10},
+            {"cosh", std::cosh},
+            {"sinh", std::sinh},
+            {"tanh", std::tanh},
+            {"exp", std::exp},
+            {"cbrt", std::cbrt},
+            {"tgamma", std::tgamma},
+            {"lgamma", std::lgamma},
+            {"ceil", std::ceil},
+            {"floor", std::floor},
+            {"acosh", std::acosh},
+            {"asinh", std::asinh},
+            {"trunc", std::trunc},
+            {"atanh", std::atanh} };
 
     bool is_left_assoc(std::string_view str)
     {
@@ -613,6 +613,7 @@ int main()
     SDL_Texture* pTexture = nullptr;
     std::string in_txt;
     std::vector<std::function<double(double)>> eqs_on_graph;
+    std::vector<std::string> eqs;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
@@ -763,9 +764,15 @@ int main()
             {
                 std::vector<std::variant<double, std::string>>rpn = parser::s_yard(in_txt, var_name);
                 auto func = parser::build_func(rpn, var_name);
-                plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
-                render(pWindow, pRenderer, pTexture, data);
-                eqs_on_graph.push_back(func);
+                
+                //if eq is not already on graph
+                if (std::find(eqs.begin(), eqs.end(), in_txt) == eqs.end()) 
+                {                  
+                    plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
+                    render(pWindow, pRenderer, pTexture, data);
+                    eqs_on_graph.push_back(func);
+                    eqs.push_back(in_txt);
+                }      
             }
             catch (const parser::parse_error& exc)
             {
