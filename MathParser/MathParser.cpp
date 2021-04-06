@@ -52,29 +52,29 @@ namespace parser
         {"-", {2, assoc::LEFT}} };
 
     static std::unordered_map<std::string_view, double(*)(double)> unary_func_tbl{ 
-            {"sin", std::sin},
-            {"cos", std::cos},
-            {"sqrt", std::sqrt},
-            {"abs", std::fabs},
-            {"tan", std::tan},
-            {"acos", std::acos},
-            {"asin", std::asin},
-            {"atan", std::atan},
-            {"log", std::log},
-            {"log10", std::log10},
-            {"cosh", std::cosh},
-            {"sinh", std::sinh},
-            {"tanh", std::tanh},
-            {"exp", std::exp},
-            {"cbrt", std::cbrt},
-            {"tgamma", std::tgamma},
-            {"lgamma", std::lgamma},
-            {"ceil", std::ceil},
-            {"floor", std::floor},
-            {"acosh", std::acosh},
-            {"asinh", std::asinh},
-            {"trunc", std::trunc},
-            {"atanh", std::atanh} };
+        {"sin", std::sin},
+        {"cos", std::cos},
+        {"sqrt", std::sqrt},
+        {"abs", std::fabs},
+        {"tan", std::tan},
+        {"acos", std::acos},
+        {"asin", std::asin},
+        {"atan", std::atan},
+        {"log", std::log},
+        {"log10", std::log10},
+        {"cosh", std::cosh},
+        {"sinh", std::sinh},
+        {"tanh", std::tanh},
+        {"exp", std::exp},
+        {"cbrt", std::cbrt},
+        {"tgamma", std::tgamma},
+        {"lgamma", std::lgamma},
+        {"ceil", std::ceil},
+        {"floor", std::floor},
+        {"acosh", std::acosh},
+        {"asinh", std::asinh},
+        {"trunc", std::trunc},
+        {"atanh", std::atanh} };
 
     bool is_left_assoc(std::string_view str)
     {
@@ -302,7 +302,7 @@ namespace parser
         {
             if (const double* num_ptr = std::get_if<double>(&tok))
             {
-                stack.push([number = *num_ptr](double){return number;});
+                stack.push([number = *num_ptr](double) {return number;});
             }
             else if (std::get<std::string>(tok) == var_name)
             {
@@ -337,64 +337,39 @@ namespace parser
     }
 }
 
-//from https://github.com/DOOMReboot/PixelPusher/blob/master/PixelPusher.cpp
-namespace disp
+
+SDL_Window* create_centered_window(uint32_t width, uint32_t height, const char* title)
 {
-    constexpr int32_t g_kRenderDeviceFlags = -1;
-    constexpr int32_t g_kErrorOccurred = -1;
+    // Get current device's Display Mode to calculate window position
+    SDL_DisplayMode DM;
+    SDL_GetCurrentDisplayMode(0, &DM);
 
-    int32_t e(int32_t result, std::string errorMessage)
-    {
-        if (result) std::cout << errorMessage;
-        return result;
-    }
+    // Calculate where the upper-left corner of a centered window will be
+    const int32_t x = DM.w / 2 - width / 2;
+    const int32_t y = DM.h / 2 - height / 2;
 
-    SDL_Window* CreateCenteredWindow(uint32_t width, uint32_t height, const char* title)
-    {
-        // Get current device's Display Mode to calculate window position
-        SDL_DisplayMode DM;
-        SDL_GetCurrentDisplayMode(0, &DM);
+    // Create the SDL window
+    SDL_Window* pWindow = SDL_CreateWindow(title, x, y, screen_w, screen_h,
+        SDL_WINDOW_ALLOW_HIGHDPI);
 
-        // Calculate where the upper-left corner of a centered window will be
-        const int32_t x = DM.w / 2 - width / 2;
-        const int32_t y = DM.h / 2 - height / 2;
-
-        // Create the SDL window
-        SDL_Window* pWindow = SDL_CreateWindow(title, x, y, screen_w, screen_h,
-            SDL_WINDOW_ALLOW_HIGHDPI);
-
-        if (e(!pWindow, "Failed to create Window\n"));
-
-        return pWindow;
-    }
-
-
-    // Free resources 
-    void Shutdown(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** ppTexture)
-    {
-        // Free the Back Buffer
-        if (ppTexture)
-        {
-            SDL_DestroyTexture(*ppTexture);
-            *ppTexture = nullptr;
-        }
-
-        // Free the SDL renderer
-        if (ppRenderer)
-        {
-            SDL_DestroyRenderer(*ppRenderer);
-            *ppRenderer = nullptr;
-        }
-
-        // Free the SDL window
-        if (ppWindow)
-        {
-            SDL_DestroyWindow(*ppWindow);
-            *ppWindow = nullptr;
-        }
-        exit(0);
-    }
+    return pWindow;
 }
+
+//free and terminate
+[[noreturn]] void shutdown(SDL_Window** ppWindow, SDL_Renderer** ppRenderer, SDL_Texture** ppTexture)
+{
+    if (ppTexture) { SDL_DestroyTexture(*ppTexture); }
+    if (ppRenderer) { SDL_DestroyRenderer(*ppRenderer); }
+    if (ppWindow) { SDL_DestroyWindow(*ppWindow); }
+    exit(0);
+}
+
+class SDL_error : public std::runtime_error
+{
+public:
+    explicit SDL_error(const std::string& what) : std::runtime_error(what) {}
+    explicit SDL_error(const char* what) : std::runtime_error(what) {}
+};
 
 //from https://stackoverflow.com/a/27030598
 template<typename T>
@@ -451,12 +426,12 @@ void create_canvas(uint32_t *data)
         }
     }
 
-    //y axis
+    //draw y axis
     for (int y = 0; y < screen_h; y++)
     {
         data[screen_w/2 + (y * screen_w)] = red;
     }
-    //x axis
+    //draw x axis
     for (int x = 0; x < screen_h; x++)
     {
         data[x + (screen_h/2 * screen_w)] = red;
@@ -469,12 +444,12 @@ void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
     const double dist = dist_2d(a, b);
     if (dist > 2 && dist < max)
     {
-        std::vector<double> xvec = linspace(a.x, b.x, static_cast<int>(dist) + 1);
-        std::vector<double> yvec = linspace(a.y, b.y, static_cast<int>(dist) + 1);
+        std::vector<double> xvec = linspace(a.x, b.x, std::round(dist) + 1);
+        std::vector<double> yvec = linspace(a.y, b.y, std::round(dist) + 1);
         for (int i = 0; i < xvec.size(); i++)
         {
-            int ix = round(xvec[i]);
-            int iy = round(yvec[i]);
+            int ix = std::round(xvec[i]);
+            int iy = std::round(yvec[i]);
             if (ix < screen_w - 1 && iy < screen_h - 1 && ix > 0 && iy > 0)
             {
                 data[ix + (iy * screen_w)] = yellow;
@@ -498,8 +473,8 @@ void plot(uint32_t* data, int range_lower, int range_upper, std::function<double
         tx *= (screen_w / static_cast<double>(range_upper));
         ty *= (screen_w / static_cast<double>(range_upper));
 
-        int ix = -round(tx / 2.0);
-        int iy = round(ty / 2.0);
+        int ix = -std::round(tx / 2.0);
+        int iy = std::round(ty / 2.0);
 
         ix += screen_w / 2;
         iy += screen_h / 2;
@@ -633,24 +608,29 @@ int main()
     int range_lower = -5;
     int max = 125;
     float pt_step_count = 500;
+
     SDL_Event e;
-    uint32_t* data = new uint32_t[screen_w * screen_h];
     SDL_Window* pWindow = nullptr;
     SDL_Renderer* pRenderer = nullptr;
     SDL_Texture* pTexture = nullptr;
+
     std::string in_txt;
     std::vector<std::function<double(double)>> eqs_on_graph;
     std::vector<std::string> eqs; //store input strings, so we can check for dupes
 
-    if (SDL_Init(SDL_INIT_VIDEO) != 0)
-    {
-        delete[] data;
-        throw std::runtime_error("SDL Failed to Init"); //this will terminate the program
-    }
+    //the exceptions throw if a sdl func fails will terminate the program
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) { throw SDL_error("SDL Failed to Init"); }
 
-    pWindow = disp::CreateCenteredWindow(screen_w, screen_h, win_title);
+    pWindow = create_centered_window(screen_w, screen_h, win_title);
+    if (!pWindow) { throw SDL_error("SDL window creation failed"); }
+
     pRenderer = SDL_CreateRenderer(pWindow, -1, SDL_RENDERER_ACCELERATED);
+    if (!pRenderer) { throw SDL_error("SDL renderer creation failed"); }
+
     pTexture = SDL_CreateTexture(pRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, screen_w, screen_h);
+    if (!pTexture) { throw SDL_error("SDL texture creation failed"); }
+
+    uint32_t* data = new uint32_t[screen_w * screen_h];
 
     SDL_StartTextInput();
     create_canvas(data);
@@ -666,7 +646,7 @@ int main()
             if (e.type == SDL_QUIT)
             {
                 delete[] data;
-                disp::Shutdown(&pWindow, &pRenderer, &pTexture);          
+                shutdown(&pWindow, &pRenderer, &pTexture);          
             }
             else if (e.type == SDL_TEXTINPUT)
             {
@@ -683,7 +663,7 @@ int main()
                 if (e.key.keysym.sym == SDLK_ESCAPE)
                 {
                     delete[] data;
-                    disp::Shutdown(&pWindow, &pRenderer, &pTexture);
+                    shutdown(&pWindow, &pRenderer, &pTexture);
                 }
                 //reset graph(default zoom, other params, clear)
                 else if (e.key.keysym.sym == SDLK_DELETE)
@@ -709,18 +689,18 @@ int main()
                         ++range_lower;
                         --range_upper;
                     }
-
-                    pt_step_count += 2;
-                    --max;
-                    if (pt_step_count >= 1000)
+                    if (pt_step_count <= 200)
                     {
-                        pt_step_count = 1000;
+                        pt_step_count = 200;
                     }
+                    --pt_step_count;
+                    --max;
+                    
                     if (max <= 200)
                     {
                         max = 200;
                     }
-
+                    std::cout << pt_step_count << '\n';
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
@@ -741,16 +721,16 @@ int main()
                     --range_lower;
                     ++range_upper;
                     ++max;
-                    pt_step_count -= 2;
-                    if (pt_step_count <= 200)
+                    ++pt_step_count;
+                    
+                    if (pt_step_count >= 750)
                     {
-                        pt_step_count = 200;
+                        pt_step_count = 750;
                     }
                     if (max >= 500)
                     {
                         max = 500;
                     }
-
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
