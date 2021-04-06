@@ -700,7 +700,6 @@ int main()
                     {
                         max = 200;
                     }
-                    std::cout << pt_step_count << '\n';
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
