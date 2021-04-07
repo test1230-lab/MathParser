@@ -25,6 +25,16 @@ constexpr uint32_t yellow = 0xFFFFFF00;
 constexpr uint32_t bright_red = 0xFFFF0000;
 constexpr uint32_t blue = 0xFF0000FF;
 
+#define HIGH_PRECISION_PLOTTING_ENABLED
+
+#ifdef HIGH_PRECISION_PLOTTING_ENABLED
+constexpr int max_pt = 1000;
+constexpr int min_pt = 5000;
+#else
+constexpr int max_pt = 100;
+constexpr int min_pt = 50;
+#endif
+
 constexpr int screen_w = 640;
 constexpr int screen_h = 640;
 constexpr int grid_spacing = 32;
@@ -459,7 +469,7 @@ void fill_gaps(uint32_t* data, pt_2d a, pt_2d b, int max)
 }
 
 //plot the function across the range lower to upper
-void plot(uint32_t* data, int range_lower, int range_upper, std::function<double(double)> func, std::string_view var_name, float pt_step_count, int max)
+void plot(uint32_t* data, int range_lower, int range_upper, std::function<double(double)> func, std::string_view var_name, int pt_step_count, int max)
 {
     const int ratio = screen_w / range_upper;
     int lst_ix = 0;
@@ -467,7 +477,7 @@ void plot(uint32_t* data, int range_lower, int range_upper, std::function<double
     
     for (int x = (range_lower * pt_step_count); x < (range_upper * pt_step_count); x++)
     {
-        double tx = x / pt_step_count;       
+        double tx = x / static_cast<double>(pt_step_count);       
         double ty = func(tx);
 
         tx *= (screen_w / static_cast<double>(range_upper));
@@ -606,8 +616,7 @@ int main()
     const std::string var_name = "x";
     int range_upper = 5;
     int range_lower = -5;
-    int max = 125;
-    float pt_step_count = 500;
+    int pt_step_count = min_pt;
 
     SDL_Event e;
     SDL_Window* pWindow = nullptr;
@@ -676,7 +685,6 @@ int main()
                     render(pWindow, pRenderer, pTexture, data);
                     range_upper = 5;
                     range_lower = -5;
-                    max = 125;
                     pt_step_count = 1000;
                     std::cout << "range: " << range_lower << " to: " << range_upper << '\r';
                     continue;
@@ -689,24 +697,16 @@ int main()
                         ++range_lower;
                         --range_upper;
                     }
-                    if (pt_step_count <= 200)
-                    {
-                        pt_step_count = 200;
-                    }
                     --pt_step_count;
-                    --max;
-                    
-                    if (max <= 200)
-                    {
-                        max = 200;
-                    }
+                    pt_step_count = std::max(pt_step_count, min_pt);
+
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
                         create_canvas(data);
                         for (const auto& func : eqs_on_graph)
                         {
-                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
+                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, range_upper);
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
@@ -719,24 +719,16 @@ int main()
                 {
                     --range_lower;
                     ++range_upper;
-                    ++max;
                     ++pt_step_count;
-                    
-                    if (pt_step_count >= 750)
-                    {
-                        pt_step_count = 750;
-                    }
-                    if (max >= 500)
-                    {
-                        max = 500;
-                    }
+                    pt_step_count = std::min(pt_step_count, max_pt);
+
                     if (!eqs_on_graph.empty())
                     {
                         memset(data, black, screen_w * screen_h * sizeof(uint32_t));
                         create_canvas(data);
                         for (const auto& func : eqs_on_graph)
                         {
-                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
+                            plot(data, range_lower, range_upper, func, var_name, pt_step_count, range_upper);
                         }
                         render(pWindow, pRenderer, pTexture, data);
                     }
@@ -774,7 +766,7 @@ int main()
                 //if eq is not already on graph
                 if (std::find(eqs.begin(), eqs.end(), in_txt) == eqs.end()) 
                 {                  
-                    plot(data, range_lower, range_upper, func, var_name, pt_step_count, max);
+                    plot(data, range_lower, range_upper, func, var_name, pt_step_count, range_upper);
                     render(pWindow, pRenderer, pTexture, data);
                     eqs_on_graph.push_back(func);
                     eqs.push_back(in_txt);
